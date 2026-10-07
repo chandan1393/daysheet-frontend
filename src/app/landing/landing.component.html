@@ -1,0 +1,263 @@
+<header class="nav">
+  <a class="brand" routerLink="/">
+    <span class="mark" aria-hidden="true"><i></i><i></i><i></i></span>
+    {{ appName }}
+  </a>
+  <nav class="links">
+    <a href="#how">How it works</a>
+    <a href="#features">Features</a>
+    <a href="#pricing">Pricing</a>
+    <a href="#faq">Questions</a>
+  </nav>
+  <div class="nav-cta">
+    @if (auth.isLoggedIn) {
+      <a class="btn btn-ink" routerLink="/app" appRipple>Open my practice</a>
+    } @else {
+      <a class="btn btn-ghost" routerLink="/login">Log in</a>
+      <a class="btn btn-ink" routerLink="/register" appRipple>Start free trial</a>
+    }
+  </div>
+</header>
+
+<section class="hero">
+  <div class="hero-copy">
+    <h1>
+      <span class="line">Run your</span>
+      <span class="line roll" [@wordRoll]="active.place">
+        @for (w of [active.place]; track w) { <span class="word">{{ w }}</span> }
+      </span>
+      <span class="line">from one calm screen.</span>
+    </h1>
+    <p class="lede">
+      Online booking, client notes and invoices for people who work by appointment.
+      Set it up tonight; tomorrow your clients book themselves.
+    </p>
+    <div class="hero-cta">
+      <a class="btn btn-primary btn-lg" routerLink="/register" appRipple>Start your 14-day free trial</a>
+      <a class="btn btn-lg" href="#how">See how it works</a>
+    </div>
+    <p class="fine">No card needed. Cancel any time.</p>
+  </div>
+
+  <div class="hero-demo">
+    <div class="switcher" role="tablist" aria-label="Choose a profession to preview">
+      @for (d of demos; track d.key) {
+        <button role="tab" [class.on]="d === active" [attr.aria-selected]="d === active" (click)="pick(d)">{{ d.label }}</button>
+      }
+    </div>
+
+    <article class="daysheet" aria-live="polite">
+      <span class="ribbon" aria-hidden="true"></span>
+      <header>
+        <div>
+          <p class="date">{{ dayLabel }}</p>
+          <h2>Your {{ active.people }} today</h2>
+        </div>
+        <span class="count">{{ active.blocks.length }} {{ active.visits }}</span>
+      </header>
+
+      <!-- Old and new lists share one grid cell while they swap, so the card never changes height. -->
+      <div class="blocks-stage" [@dayMorph]="active.key">
+        @for (d of [active]; track d.key) {
+          <ol class="blocks">
+            @for (b of d.blocks; track b.time; let i = $index) {
+              <li class="row">
+                <time>{{ b.time }}</time>
+                <div class="block" [style.--c]="b.color" [class.past]="i < d.nowAfter">
+                  <strong>{{ b.name }}</strong>
+                  <span>{{ b.service }}</span>
+                </div>
+              </li>
+              @if (i === d.nowAfter - 1) {
+                <li class="now row" aria-label="Current time"><span>now</span></li>
+              }
+            }
+          </ol>
+        }
+      </div>
+
+      <footer>
+        <div><span class="k">Billed today</span><span class="v">{{ active.billed }}</span></div>
+        <div><span class="k">Booked online</span><span class="v">2 of {{ active.blocks.length }}</span></div>
+      </footer>
+    </article>
+  </div>
+</section>
+
+<app-landing-problems />
+
+<section class="how" id="how">
+  <div class="section-head" appReveal>
+    <h2>From the first booking to the last payment</h2>
+    <p>Three things every practice does every day, finally in one place.</p>
+  </div>
+
+  <div class="steps">
+    <article class="step" appReveal>
+      <div class="step-copy">
+        <span class="step-no">1</span>
+        <h3>Clients book themselves</h3>
+        <p>Share one link on WhatsApp, Instagram or your website. Clients pick a service and a free slot from your real calendar, at any hour.</p>
+      </div>
+      <div class="step-visual mini-book">
+        <p class="mini-title">Book a treatment session</p>
+        <div class="mini-days">
+          @for (d of bookingDays; track d.date; let i = $index) {
+            <button [class.on]="pickedDay === i" (click)="pickedDay = i">
+              <span>{{ d.day }}</span><strong>{{ d.date }}</strong>
+            </button>
+          }
+        </div>
+        <div class="mini-slots">
+          @for (s of bookingSlots; track s) {
+            <button [class.on]="pickedSlot === s" (click)="pickedSlot = s">{{ s }}</button>
+          }
+        </div>
+        <div class="mini-confirm">Confirm {{ bookingDays[pickedDay].day }} {{ bookingDays[pickedDay].date }} at {{ pickedSlot }}</div>
+      </div>
+    </article>
+
+    <article class="step flip" appReveal>
+      <div class="step-copy">
+        <span class="step-no">2</span>
+        <h3>Every note stays with the person</h3>
+        <p>Every visit gets its own notes and files: prescriptions, reports, scans or photos. On the tenth visit, the first one is still a tap away.</p>
+      </div>
+      <div class="step-visual mini-notes">
+        <div class="mini-person">
+          <span class="av">AM</span>
+          <div><strong>Aarav Mehta</strong><span>12 visits, next on Thursday</span></div>
+        </div>
+        <ul>
+          <li><time>Today</time><p>Good progress since last visit. Review again in two weeks.</p></li>
+          <li><time>18 Sep</time><p>Prefers morning slots. WhatsApp reminders work best.</p></li>
+          <li><time>2 Sep</time><p>First visit. Agreed a six-week plan.</p></li>
+        </ul>
+      </div>
+    </article>
+
+    <article class="step" appReveal>
+      <div class="step-copy">
+        <span class="step-no">3</span>
+        <h3>Invoices in one click</h3>
+        <p>Turn a finished appointment into an invoice, print it or mark it paid. Your dashboard shows exactly who still owes you.</p>
+      </div>
+      <div class="step-visual mini-invoice" [class.paid]="invoicePaid">
+        <div class="inv-head"><strong>INV-0142</strong><span class="stamp">Paid</span></div>
+        <div class="inv-line"><span>Treatment session, 45 min</span><span>₹1,800</span></div>
+        <div class="inv-line"><span>Home exercise plan</span><span>₹400</span></div>
+        <div class="inv-total"><span>Total</span><strong>₹2,200</strong></div>
+        <button class="btn btn-sm" [class.btn-primary]="!invoicePaid" (click)="invoicePaid = !invoicePaid" appRipple>
+          {{ invoicePaid ? 'Undo' : 'Mark as paid' }}
+        </button>
+      </div>
+    </article>
+  </div>
+</section>
+
+<app-landing-calculator [monthlyPrice]="monthlyRupees" />
+
+<app-landing-tour />
+
+<section class="words">
+  <div class="words-copy" appReveal>
+    <h2>It speaks your language</h2>
+    <p>Pick your profession when you sign up and the whole app uses your words, with services to match. Change any of them later in Settings.</p>
+  </div>
+  <div class="words-table panel" appReveal [revealDelay]="120">
+    <table class="table">
+      <thead><tr><th>You are a</th><th>The app says</th><th>Visits are</th></tr></thead>
+      <tbody>
+        @for (row of professionsTable; track row[0]) {
+          <tr><td>{{ row[0] }}</td><td>{{ row[1] }}</td><td>{{ row[2] }}</td></tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<app-landing-features />
+
+<section class="pricing" id="pricing">
+  <div class="section-head" appReveal>
+    <h2>One plan, everything included</h2>
+    <p>Unlimited clients, appointments, notes, documents and invoices. Free for 14 days, then pay in rupees with UPI, card or net banking.</p>
+  </div>
+  <div class="plans">
+    @if (!plans.length) {
+      @for (i of [1, 2]; track i) { <div class="plan skeleton" style="height: 420px"></div> }
+    }
+    @for (p of plans; track p.code; let i = $index) {
+      <article class="plan" [class.best]="p.highlighted" appReveal [revealDelay]="i * 120">
+        @if (p.badge) { <span class="save">{{ p.badge }}</span> }
+        <h3>{{ p.name }}</h3>
+        <p class="price"><strong>{{ rupees(p.amountPaise) }}</strong><span>per {{ p.intervalLabel }}{{ p.gstRate ? (p.taxIncluded ? ', incl. GST' : ' + GST') : '' }}</span></p>
+        @if (p.description) { <p class="plan-desc">{{ p.description }}</p> }
+        <ul>
+          @for (f of p.features; track f) { <li><app-icon name="check" [size]="16" />{{ f }}</li> }
+        </ul>
+        <a class="btn btn-lg" [class.btn-primary]="p.highlighted" routerLink="/register" appRipple>Start free trial</a>
+      </article>
+    }
+  </div>
+  <p class="pay-note">
+    <app-icon name="wallet" [size]="16" />Every feature is in every plan. {{ gstNote }} GST invoice with every payment.
+    Prefer bank transfer? <a [href]="'mailto:' + contactEmail + '?subject=Daysheet%20plan'">Email us</a>
+  </p>
+</section>
+
+<section class="faq" id="faq">
+  <h2 appReveal>Questions people ask first</h2>
+  <div class="faq-list" appReveal [revealDelay]="80">
+    @for (f of faqs; track f.q) {
+      <details>
+        <summary>{{ f.q }}<app-icon name="plus" [size]="18" /></summary>
+        <p>{{ f.a }}</p>
+      </details>
+    }
+  </div>
+</section>
+
+<section class="closing">
+  <h2 appReveal>Set up your practice tonight.</h2>
+  <p>Five minutes to sign up. Your booking link is ready the moment you finish.</p>
+  <a class="btn btn-lg cta" routerLink="/register" appRipple>Start your free trial</a>
+</section>
+
+<footer class="foot">
+  <div class="foot-top">
+    <div class="foot-brand">
+      <a class="brand" routerLink="/">
+        <span class="mark" aria-hidden="true"><i></i><i></i><i></i></span>
+        {{ appName }}
+      </a>
+      <p>Bookings, notes and invoices for people who work by appointment.</p>
+      <a class="mail" [href]="'mailto:' + contactEmail"><app-icon name="mail" [size]="15" />{{ contactEmail }}</a>
+    </div>
+    <nav class="foot-col" aria-label="Product">
+      <h4>Product</h4>
+      <a href="#how">How it works</a>
+      <a href="#features">Features</a>
+      <a href="#calculator">No-show calculator</a>
+      <a href="#pricing">Pricing</a>
+      <a href="#faq">Questions</a>
+    </nav>
+    <nav class="foot-col" aria-label="Made for">
+      <h4>Made for</h4>
+      @for (p of footerProfessions; track p) { <a routerLink="/register">{{ p }}</a> }
+    </nav>
+    <nav class="foot-col" aria-label="Company">
+      <h4>Company</h4>
+      <a routerLink="/contact">Contact us</a>
+      <a routerLink="/privacy">Privacy policy</a>
+      <a routerLink="/terms">Terms of service</a>
+      <a routerLink="/refunds">Refunds and cancellation</a>
+    </nav>
+  </div>
+  <div class="foot-bottom">
+    <span>© {{ year }} {{ appName }}@if (biz) { by {{ biz.name }}@if (biz.gstin) {. GSTIN {{ biz.gstin }}}}</span>
+    <span class="spacer"></span>
+    <a routerLink="/login">Log in</a>
+    <a routerLink="/register">Start free trial</a>
+  </div>
+</footer>

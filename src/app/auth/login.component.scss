@@ -1,0 +1,13 @@
+.stack { margin-top: 44px; display: flex; flex-direction: column; gap: 12px; max-width: 420px; }
+.card {
+  display: flex; gap: 16px; align-items: center; padding: 14px 18px; border-radius: 16px;
+  background: var(--ink-2); border-left: 4px solid var(--c);
+  animation: rise .7s var(--ease-out) both;
+  .t { font-family: var(--font-display); font-weight: 700; color: #fff; font-size: 17px; font-variant-numeric: tabular-nums; }
+  strong { display: block; color: #fff; font-size: 15px; }
+  span { font-size: 13px; color: #9FB0C8; }
+}
+.c1 { --c: var(--lagoon-glow); animation-delay: .15s; }
+.c2 { --c: #A99DFA; animation-delay: .3s; margin-left: 28px; }
+.c3 { --c: var(--marigold); animation-delay: .45s; margin-left: 12px; }
+@keyframes rise { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: none; } }

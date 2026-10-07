@@ -1,0 +1,36 @@
+<section class="features" id="features">
+  <div class="lp-head" appReveal>
+    <h2>Everything a small practice needs</h2>
+    <p>No add-ons and no feature tiers. Every practice gets all of it from day one.</p>
+  </div>
+
+  <div class="ledger">
+    @for (g of groups; track g.title; let gi = $index) {
+      <div class="page" [style.--c]="g.color" appReveal [revealDelay]="gi * 90">
+        <h3><span class="ic"><app-icon [name]="g.icon" [size]="17" /></span>{{ g.title }}</h3>
+        <ul>
+          @for (item of g.items; track item) {
+            <li><app-icon name="check" [size]="15" [stroke]="2.6" /><span>{{ item }}</span></li>
+          }
+        </ul>
+      </div>
+    }
+  </div>
+
+  <div class="band" appReveal [revealDelay]="200">
+    <div class="band-head">
+      <h3>Made for your profession</h3>
+      <p>Pick your work when you sign up and the right tools switch on by themselves.</p>
+    </div>
+    <div class="tiles">
+      @for (t of professions; track t.title; let ti = $index) {
+        <div class="tile" [style.--c]="t.color" appReveal [revealDelay]="260 + ti * 90">
+          <span class="t-ic"><app-icon [name]="t.icon" [size]="20" /></span>
+          <span class="who">{{ t.who }}</span>
+          <strong>{{ t.title }}</strong>
+          <p>{{ t.text }}</p>
+        </div>
+      }
+    </div>
+  </div>
+</section>

@@ -1,0 +1,307 @@
+<a class="back" routerLink="/app/clients"><app-icon name="arrow-left" [size]="16" />All {{ 'clients' | term: true }}</a>
+
+@if (error) {
+  <section class="panel"><app-empty-state icon="alert" title="Couldn't open this profile" [text]="error">
+    <button class="btn" (click)="load(true)">Try again</button>
+  </app-empty-state></section>
+} @else if (!client) {
+  <div class="skeleton" style="height: 168px; border-radius: 18px"></div>
+  <div class="skeleton" style="height: 320px; border-radius: 18px; margin-top: 16px"></div>
+} @else {
+  <section class="profile panel" @fadeSlide>
+    <div class="who">
+      <app-avatar [name]="client.fullName" [size]="68" />
+      <div class="names">
+        <h1>{{ client.fullName }}</h1>
+        <p class="meta">
+          <span>{{ 'client' | term }} since {{ memberSince() }}</span>
+          @if (age !== null) { <span>{{ age }} years old</span> }
+          @for (t of tags; track t) { <span class="tag">{{ t }}</span> }
+        </p>
+        <div class="contact">
+          @if (client.phone) {
+            <a class="btn btn-sm" [href]="'tel:' + client.phone"><app-icon name="phone" [size]="15" />{{ client.phone }}</a>
+            <a class="btn btn-sm" [href]="whatsapp" target="_blank" rel="noopener"><app-icon name="message" [size]="15" />WhatsApp</a>
+          }
+          @if (client.email) {
+            <a class="btn btn-sm" [href]="'mailto:' + client.email"><app-icon name="mail" [size]="15" />Email</a>
+          }
+          <button class="btn btn-sm btn-ghost" (click)="editOpen = true"><app-icon name="edit" [size]="15" />Edit details</button>
+        </div>
+      </div>
+      <div class="cta">
+        <button class="btn btn-primary" (click)="newAppointment()" appRipple><app-icon name="plus" [size]="16" [stroke]="2.5" />Book {{ 'session' | term: true }}</button>
+        <button class="btn" (click)="newInvoice()"><app-icon name="receipt" [size]="16" />New invoice</button>
+      </div>
+    </div>
+
+    <dl class="stats">
+      <div><dt>Visits</dt><dd [appCountUp]="client.visits"></dd></div>
+      <div><dt>Total paid</dt><dd>{{ client.totalPaid | money }}</dd></div>
+      <div>
+        <dt>Next {{ 'session' | term: true }}</dt>
+        <dd class="small">
+          @if (upcoming[0]; as n) { <a (click)="ui.showAppointment(n)">{{ n.startAt | dayLabel }}, {{ n.startAt | hm }}</a> }
+          @else { <span class="faint">Not booked</span> }
+        </dd>
+      </div>
+      <div><dt>Files</dt><dd>{{ client.documents.length }}</dd></div>
+    </dl>
+  </section>
+
+  @if (auth.hasModule('PACKAGES')) {
+    <section class="packages">
+      <div class="pk-head">
+        <h3><app-icon name="package" [size]="17" />Packages</h3>
+        <button class="btn btn-sm" (click)="openSell()"><app-icon name="plus" [size]="14" [stroke]="2.5" />Sell a package</button>
+      </div>
+      @if (!activePackages.length) { <p class="muted small">No active package. Sell one and completed visits will use it up automatically.</p> }
+      <div class="pk-list">
+        @for (p of activePackages; track p.id) {
+          <div class="pk">
+            <div class="pk-top"><strong>{{ p.name }}</strong><span class="muted small">{{ p.totalSessions - p.usedSessions }} left</span></div>
+            <div class="bar"><i [style.width.%]="p.usedSessions / p.totalSessions * 100"></i></div>
+            <div class="pk-bottom">
+              <span class="muted small">{{ p.usedSessions }} of {{ p.totalSessions }} used@if (p.expiresOn) {, valid till {{ fullDate(p.expiresOn) }}}</span>
+              <span class="adj">
+                <button class="btn btn-ghost btn-icon btn-sm" (click)="adjust(p, -1)" aria-label="One fewer used">−</button>
+                <button class="btn btn-ghost btn-icon btn-sm" (click)="adjust(p, 1)" aria-label="One more used">+</button>
+              </span>
+            </div>
+          </div>
+        }
+      </div>
+      @if (pastPackages.length) { <p class="muted small past">{{ pastPackages.length }} finished or expired package{{ pastPackages.length === 1 ? '' : 's' }}</p> }
+    </section>
+  }
+
+  <div class="tabs">
+    <div class="seg" [appSegMarker]="tab">
+      <span class="marker"></span>
+      <button [class.on]="tab === 'history'" (click)="tab = 'history'">History <span class="count">{{ seenVisits }}</span></button>
+      <button [class.on]="tab === 'documents'" (click)="tab = 'documents'">Documents <span class="count">{{ client.documents.length }}</span></button>
+      <button [class.on]="tab === 'invoices'" (click)="tab = 'invoices'">Invoices <span class="count">{{ client.invoices.length }}</span></button>
+      @if (auth.hasModule('CASES')) {
+        <button [class.on]="tab === 'cases'" (click)="tab = 'cases'">Cases <span class="count">{{ client.cases.length }}</span></button>
+      }
+      @if (auth.hasModule('DEADLINES')) {
+        <button [class.on]="tab === 'deadlines'" (click)="tab = 'deadlines'">Deadlines <span class="count">{{ client.deadlines.length }}</span></button>
+      }
+    </div>
+  </div>
+
+  @switch (tab) {
+    @case ('history') {
+      <div class="history" @fadeSlide>
+        <section class="panel compose">
+          <textarea #composer class="textarea" [(ngModel)]="draft" (keydown)="onNoteKey($event)" rows="3"
+                    placeholder="What did you find, advise or prescribe? Anything to check next time?" aria-label="New note"></textarea>
+          <div class="compose-bar">
+            <label class="link-to">
+              <span class="sr-only">Save to</span>
+              <select class="select" [(ngModel)]="linkTo" aria-label="Save to">
+                @for (v of visitOptions; track v.id) { <option [ngValue]="v.id">{{ v.label }}</option> }
+                <option [ngValue]="null">General note (not tied to a visit)</option>
+              </select>
+            </label>
+            <app-file-drop [compact]="true" label="Attach" (files)="upload($event, linkTo)" />
+            <span class="spacer"></span>
+            <span class="faint kbd">Ctrl + Enter</span>
+            <button class="btn btn-ink btn-sm" (click)="addNote()" [disabled]="!draft.trim() || savingNote" appRipple>Save note</button>
+          </div>
+          @if (pending.length) {
+            <div class="pending">@for (p of pending; track p.key) { <span class="uploading"><span class="spinner"></span>{{ p.name }}</span> }</div>
+          }
+        </section>
+
+        @if (upcoming.length) {
+          <div class="upcoming">
+            <span class="up-label">Coming up</span>
+            @for (a of upcoming; track a.id) {
+              <button class="up-chip" [style.--c]="a.color" (click)="ui.showAppointment(a)">
+                <i></i>{{ a.startAt | dayLabel }}, {{ a.startAt | hm }}<span>{{ a.serviceName }}</span>
+              </button>
+            }
+          </div>
+        }
+
+        <div class="input-group search">
+          <app-icon name="search" [size]="16" />
+          <input class="input" [(ngModel)]="query" (ngModelChange)="rebuild()" placeholder="Search notes, files and visits" aria-label="Search history">
+        </div>
+
+        @if (!history.length) {
+          <section class="panel">
+            <app-empty-state icon="history" [title]="query ? 'Nothing matches that search' : 'No history yet'"
+              [text]="query ? 'Try another word from a note or a file name.' : 'Visits, notes and files will build up here, newest first.'" />
+          </section>
+        } @else {
+          <ol class="timeline" [@listStagger]="history.length">
+            @for (e of history; track e.key) {
+              <li class="entry" [class.general]="!e.appt" [class.missed]="e.appt && e.visitNumber === null" [style.--c]="e.appt?.color ?? '#8A97AA'">
+                <span class="dot"></span>
+                <article class="card">
+                  <header>
+                    <div class="when">
+                      @if (e.appt) {
+                        <span class="num">{{ e.visitNumber !== null ? 'Visit ' + e.visitNumber : 'Not seen' }}</span>
+                        <strong>{{ entryDate(e) }}</strong>
+                        <span class="svc">{{ e.appt.serviceName }}, {{ e.appt.startAt | hm }}</span>
+                      } @else {
+                        <span class="num gen">General</span>
+                        <strong>{{ entryDate(e) }}</strong>
+                      }
+                    </div>
+                    @if (e.appt) {
+                      <app-status-pill [status]="e.appt.status" />
+                      <button class="btn btn-ghost btn-icon btn-sm" (click)="ui.showAppointment(e.appt)" aria-label="Open visit"><app-icon name="chevron-right" [size]="16" /></button>
+                    }
+                  </header>
+
+                  @for (n of e.notes; track n.id) {
+                    <div class="note">
+                      <p>{{ n.body }}</p>
+                      <span class="note-meta">{{ noteTime(n) }}@if (n.authorName) { by {{ n.authorName }} }
+                        <button class="link-del" (click)="deleteNote(n)">Delete</button>
+                      </span>
+                    </div>
+                  }
+                  @for (rx of e.rx; track rx.id) {
+                    <button class="rx-line" (click)="ui.showPrescription(rx)">
+                      <app-icon name="pill" [size]="15" /><span><strong>Prescription</strong>{{ medicinesOf(rx) }}</span><app-icon name="chevron-right" [size]="14" />
+                    </button>
+                  }
+                  @if (e.docs.length || pendingFor(e.appt?.id ?? null).length) {
+                    <div class="docs">
+                      @for (d of e.docs; track d.id) { <app-doc-chip [doc]="d" /> }
+                    </div>
+                  }
+                  @if (e.appt && !e.notes.length && !e.docs.length && !e.rx.length) {
+                    <p class="empty-visit">Nothing recorded for this visit.</p>
+                  }
+                  @if (e.appt && e.visitNumber !== null) {
+                    <div class="card-actions">
+                      <button class="btn btn-ghost btn-sm" (click)="writeFor(e)"><app-icon name="edit" [size]="14" />Add a note</button>
+                      <app-file-drop [compact]="true" label="Add file" (files)="upload($event, e.appt.id)" />
+                      @if (auth.hasModule('PRESCRIPTIONS')) {
+                        <button class="btn btn-ghost btn-sm" (click)="writeRx(e)"><app-icon name="pill" [size]="14" />Prescription</button>
+                      }
+                    </div>
+                  }
+                </article>
+              </li>
+            }
+          </ol>
+        }
+      </div>
+    }
+
+    @case ('documents') {
+      <section class="panel docs-panel" @fadeSlide>
+        <app-file-drop [hint]="hint" (files)="upload($event, null)" />
+        @if (pending.length) {
+          <div class="pending">@for (p of pending; track p.key) { <span class="uploading"><span class="spinner"></span>{{ p.name }}</span> }</div>
+        }
+        @if (!client.documents.length) {
+          <p class="none">No files yet. Photos taken on a phone are a quick way to keep paper records.</p>
+        } @else {
+          <ul class="doc-list" [@listStagger]="client.documents.length">
+            @for (d of client.documents; track d.id) {
+              <li><app-doc-chip [doc]="d" /><span class="doc-visit">{{ visitLabel(d) }}</span></li>
+            }
+          </ul>
+        }
+      </section>
+    }
+
+    @case ('cases') {
+      <section class="panel" @fadeSlide>
+        @if (!client.cases.length) {
+          <app-empty-state icon="briefcase" title="No cases yet" text="Add a case from the Cases page.">
+            <a class="btn btn-primary" routerLink="/app/cases" [queryParams]="{ new: client.id }">Add a case</a>
+          </app-empty-state>
+        } @else {
+          <ul class="mini-list">
+            @for (c of client.cases; track c.id) {
+              <li><a routerLink="/app/cases" [queryParams]="{ open: c.id }">
+                <span class="grow"><strong>{{ c.title }}</strong><span class="muted small">{{ c.caseNumber }}@if (c.court) {, {{ c.court }}}</span></span>
+                @if (c.nextHearing) { <span class="next">Next hearing {{ fullDate(c.nextHearing) }}</span> }
+                <span class="pill-s" [class.closed]="c.status === 'CLOSED'">{{ c.status === 'OPEN' ? 'Open' : 'Closed' }}</span>
+              </a></li>
+            }
+          </ul>
+        }
+      </section>
+    }
+    @case ('deadlines') {
+      <section class="panel" @fadeSlide>
+        @if (!client.deadlines.length) {
+          <app-empty-state icon="clock" title="No deadlines yet" text="Add filings and due dates from the Deadlines page.">
+            <a class="btn btn-primary" routerLink="/app/deadlines">Open deadlines</a>
+          </app-empty-state>
+        } @else {
+          <ul class="mini-list">
+            @for (d of client.deadlines; track d.id) {
+              <li><a routerLink="/app/deadlines">
+                <span class="grow"><strong>{{ d.title }}</strong><span class="muted small">{{ d.period }}</span></span>
+                <span [class.late]="d.overdue" class="small">Due {{ fullDate(d.dueDate) }}</span>
+                <span class="pill-s" [class.closed]="d.status === 'DONE'">{{ d.status === 'DONE' ? 'Done' : d.overdue ? 'Overdue' : 'Pending' }}</span>
+              </a></li>
+            }
+          </ul>
+        }
+      </section>
+    }
+    @case ('invoices') {
+      <section class="panel" @fadeSlide>
+        @if (!client.invoices.length) {
+          <app-empty-state icon="receipt" title="No invoices yet" text="Create one from a finished appointment or start from scratch.">
+            <button class="btn btn-primary" (click)="newInvoice()">New invoice</button>
+          </app-empty-state>
+        } @else {
+          <div class="table-wrap">
+            <table class="table">
+              <thead><tr><th>Number</th><th>Issued</th><th>Status</th><th class="num">Total</th></tr></thead>
+              <tbody>
+                @for (i of client.invoices; track i.id) {
+                  <tr class="clickable" (click)="ui.showInvoice(i.id)">
+                    <td><strong>{{ i.number }}</strong></td>
+                    <td class="muted">{{ fullDate(i.issueDate) }}</td>
+                    <td><app-status-pill [status]="i.status" [overdue]="i.overdue" /></td>
+                    <td class="num"><strong>{{ i.total | money }}</strong></td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+      </section>
+    }
+  }
+
+  <button class="archive btn btn-ghost btn-sm" (click)="archive()"><app-icon name="trash" [size]="15" />Archive {{ client.fullName }}</button>
+
+  <app-drawer [open]="editOpen" title="Edit details" (closed)="editOpen = false">
+    @if (editOpen) { <app-client-form [client]="client" (saved)="onEdited()" (cancelled)="editOpen = false" /> }
+  </app-drawer>
+}
+
+<app-drawer [open]="sellOpen" title="Sell a package" (closed)="sellOpen = false">
+  <div class="field">
+    <label for="sell-t">Package</label>
+    <select id="sell-t" class="select" [(ngModel)]="sell.templateId">
+      @for (t of templates; track t.id) { <option [ngValue]="t.id">{{ t.name }} ({{ t.sessions }} sessions, {{ t.price | money }})</option> }
+    </select>
+  </div>
+  @if (sellTemplate; as t) {
+    <p class="muted small">{{ t.sessions }} sessions{{ t.validityDays ? ', valid ' + t.validityDays + ' days' : '' }}{{ t.serviceName ? ', for ' + t.serviceName : ', for any service' }}.</p>
+  }
+  <label class="switch sw"><input type="checkbox" [(ngModel)]="sell.createInvoice"><span class="track"></span><span>Create an invoice</span></label>
+  @if (sell.createInvoice) {
+    <label class="switch sw"><input type="checkbox" [(ngModel)]="sell.markPaid"><span class="track"></span><span>Already paid</span></label>
+  }
+  <div class="sell-actions">
+    <button class="btn" (click)="sellOpen = false">Cancel</button>
+    <button class="btn btn-primary" (click)="confirmSell()" appRipple>Sell package</button>
+  </div>
+</app-drawer>

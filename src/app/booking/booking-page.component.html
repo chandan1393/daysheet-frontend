@@ -1,0 +1,137 @@
+<div class="page">
+  @if (loadError) {
+    <div class="card center">
+      <app-empty-state icon="alert" title="Booking page not found" [text]="loadError" />
+    </div>
+  } @else if (!practice) {
+    <div class="card"><div class="skeleton" style="height: 28px; width: 60%"></div><div class="skeleton" style="height: 16px; width: 40%; margin-top: 12px"></div></div>
+  } @else {
+    <header class="hero">
+      <span class="badge">{{ practice.professionName }}</span>
+      <h1>{{ practice.name }}</h1>
+      <p class="contact">
+        @if (practice.address) { <span><app-icon name="globe" [size]="15" />{{ practice.address }}</span> }
+        @if (practice.phone) { <a [href]="'tel:' + practice.phone"><app-icon name="phone" [size]="15" />{{ practice.phone }}</a> }
+      </p>
+    </header>
+
+    <div class="card">
+      @if (step < 3) {
+        <div class="crumbs">
+          @if (step > 0) { <button class="btn btn-ghost btn-sm" (click)="back()"><app-icon name="arrow-left" [size]="15" />Back</button> }
+          <span class="spacer"></span>
+          <span class="count">Step {{ step + 1 }} of 3</span>
+        </div>
+      }
+
+      <div class="steps" [@stepSlide]="step">
+        @switch (step) {
+          @case (0) {
+            <section>
+              <h2>Choose a {{ practice.sessionLabel.toLowerCase() }}</h2>
+              <div class="services">
+                @for (s of practice.services; track s.id) {
+                  <button class="service" (click)="chooseService(s)" [style.--c]="s.color">
+                    <span class="bar"></span>
+                    <span class="info">
+                      <strong>{{ s.name }}</strong>
+                      <span>{{ s.durationMinutes | duration }}@if (s.description) {<em>. {{ s.description }}</em>}</span>
+                    </span>
+                    <span class="price">{{ money(s.price) }}</span>
+                    <app-icon name="chevron-right" [size]="18" />
+                  </button>
+                } @empty {
+                  <app-empty-state icon="calendar" title="Online booking isn't open yet" text="Contact the practice directly to book." />
+                }
+              </div>
+            </section>
+          }
+          @case (1) {
+            <section>
+              <h2>Pick a time</h2>
+              <p class="muted">{{ service?.name }}, {{ service?.durationMinutes | duration }}</p>
+              <div class="days" role="listbox" aria-label="Dates">
+                @for (d of days; track d.iso) {
+                  <button class="day" role="option" [class.on]="day?.iso === d.iso" [disabled]="!d.open"
+                          [attr.aria-selected]="day?.iso === d.iso" (click)="chooseDay(d)">
+                    <span>{{ dayName(d.date) }}</span>
+                    <strong>{{ d.date.getDate() }}</strong>
+                    <span>{{ monthName(d.date) }}</span>
+                  </button>
+                }
+              </div>
+              @if (submitError) { <p class="alert">{{ submitError }}</p> }
+              <div class="slots">
+                @if (slotsLoading) {
+                  @for (n of [1, 2, 3, 4, 5, 6, 7, 8]; track n) { <div class="skeleton slot-sk"></div> }
+                } @else {
+                  @for (t of slots; track t) {
+                    <button class="slot" [class.on]="time === t" (click)="chooseTime(t)">{{ t }}</button>
+                  } @empty {
+                    <p class="none">No free times on {{ longDate(day?.date) }}. Try another day.</p>
+                  }
+                }
+              </div>
+            </section>
+          }
+          @case (2) {
+            <section>
+              <h2>Your details</h2>
+              <div class="summary" [style.--c]="service?.color ?? '#0E7C86'">
+                <app-icon name="calendar" [size]="18" />
+                <div>
+                  <strong>{{ service?.name }}</strong>
+                  <span>{{ longDate(day?.date) }} at {{ time }}</span>
+                </div>
+                <button class="btn btn-ghost btn-sm" (click)="step = 1">Change</button>
+              </div>
+              <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
+                <div class="hp" aria-hidden="true"><label>Website <input type="text" formControlName="website" tabindex="-1" autocomplete="off"></label></div>
+                <div class="field">
+                  <label for="bn">Full name</label>
+                  <input id="bn" class="input" formControlName="fullName" autocomplete="name">
+                  @if (form.controls.fullName.touched && form.controls.fullName.invalid) { <span class="error">Enter your name.</span> }
+                </div>
+                <div class="field-row">
+                  <div class="field">
+                    <label for="bp">Phone</label>
+                    <input id="bp" class="input" type="tel" formControlName="phone" autocomplete="tel">
+                    @if (form.controls.phone.touched && form.controls.phone.invalid) { <span class="error">Enter a phone number.</span> }
+                  </div>
+                  <div class="field">
+                    <label for="be">Email (optional)</label>
+                    <input id="be" class="input" type="email" formControlName="email" autocomplete="email">
+                  </div>
+                </div>
+                <div class="field">
+                  <label for="bnotes">Anything we should know? (optional)</label>
+                  <textarea id="bnotes" class="textarea" formControlName="notes" rows="3"></textarea>
+                </div>
+                @if (submitError) { <p class="alert">{{ submitError }}</p> }
+                <button class="btn btn-primary btn-lg full" type="submit" [disabled]="submitting" appRipple>
+                  @if (submitting) { <span class="spinner"></span> } Confirm booking
+                </button>
+              </form>
+            </section>
+          }
+          @case (3) {
+            <section class="done">
+              <svg class="check" viewBox="0 0 52 52" aria-hidden="true">
+                <circle cx="26" cy="26" r="24" />
+                <path d="M15 27l7 7 15-16" />
+              </svg>
+              <h2>You're booked</h2>
+              <p>{{ confirmation?.serviceName }} with {{ confirmation?.practiceName }}</p>
+              <p class="when">{{ longDate(day?.date) }} at {{ time }}</p>
+              <div class="done-actions">
+                <button class="btn" (click)="downloadIcs()"><app-icon name="calendar" [size]="16" />Add to my calendar</button>
+                <button class="btn btn-ghost" (click)="bookAnother()">Book another</button>
+              </div>
+            </section>
+          }
+        }
+      </div>
+    </div>
+  }
+  <p class="powered">Booking by <a routerLink="/">{{ appName }}</a></p>
+</div>

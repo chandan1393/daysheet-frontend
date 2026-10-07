@@ -1,0 +1,57 @@
+<div class="toolbar no-print">
+  <button class="btn btn-sm btn-ghost btn-danger" (click)="remove()"><app-icon name="trash" [size]="15" />Delete</button>
+  <span class="spacer"></span>
+  <button class="btn btn-sm" (click)="edit.emit(p)"><app-icon name="edit" [size]="15" />Edit</button>
+  <button class="btn btn-sm" (click)="copy()"><app-icon name="copy" [size]="15" />Copy text</button>
+  <button class="btn btn-sm" (click)="whatsapp()"><app-icon name="message" [size]="15" />WhatsApp</button>
+  <button class="btn btn-sm btn-primary" (click)="print()" appRipple><app-icon name="printer" [size]="15" />Print or PDF</button>
+</div>
+
+<article class="rx-paper" #paper>
+  <header>
+    <div>
+      <h2>{{ auth.workspace?.name }}</h2>
+      @if (auth.workspace?.practitionerTitle) { <p class="doc">{{ auth.workspace?.practitionerTitle }}</p> }
+      @if (auth.workspace?.registrationNumber) { <p class="reg">Reg. No. {{ auth.workspace?.registrationNumber }}</p> }
+    </div>
+    <div class="contact">
+      @if (auth.workspace?.address) { <span>{{ auth.workspace?.address }}</span> }
+      @if (auth.workspace?.phone) { <span>{{ auth.workspace?.phone }}</span> }
+      @if (auth.workspace?.email) { <span>{{ auth.workspace?.email }}</span> }
+    </div>
+  </header>
+
+  <section class="patient">
+    <div><span class="k">Patient</span><strong>{{ p.clientName }}</strong></div>
+    <div><span class="k">Date</span><strong>{{ date(p.createdAt) }}</strong></div>
+  </section>
+
+  @if (p.vitals) { <p class="line"><span class="k">Vitals</span>{{ p.vitals }}</p> }
+  @if (p.complaints) { <p class="line"><span class="k">Complaints</span>{{ p.complaints }}</p> }
+  @if (p.diagnosis) { <p class="line"><span class="k">Diagnosis</span><strong>{{ p.diagnosis }}</strong></p> }
+
+  @if (p.items.length) {
+    <div class="rx"><span class="mark">Rx</span></div>
+    <table class="meds">
+      <thead><tr><th>#</th><th>Medicine</th><th>Dose</th><th>Frequency</th><th>When</th><th>Duration</th></tr></thead>
+      <tbody>
+        @for (i of p.items; track $index; let n = $index) {
+          <tr>
+            <td>{{ n + 1 }}</td>
+            <td><strong>{{ i.medicine }}</strong>@if (i.notes) { <span class="note">{{ i.notes }}</span> }</td>
+            <td>{{ i.dose }}</td><td class="freq">{{ i.frequency }}</td><td>{{ i.timing }}</td><td>{{ i.duration }}</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  }
+
+  @if (p.tests) { <p class="line"><span class="k">Tests advised</span>{{ p.tests }}</p> }
+  @if (p.advice) { <p class="line advice"><span class="k">Advice</span>{{ p.advice }}</p> }
+  @if (p.followUpDate) { <p class="line"><span class="k">Follow-up</span><strong>{{ date(p.followUpDate) }}</strong></p> }
+
+  <footer>
+    <span class="legend">Frequency: morning-afternoon-night</span>
+    <span class="sign">{{ auth.workspace?.practitionerTitle || p.authorName }}<br><small>Signature</small></span>
+  </footer>
+</article>

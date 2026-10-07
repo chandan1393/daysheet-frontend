@@ -1,0 +1,136 @@
+<div class="head">
+  <div><h1>Practices</h1><p>{{ rows.length }} {{ rows.length === 1 ? 'practice' : 'practices' }}{{ q ? ' matching “' + q + '”' : '' }}</p></div>
+</div>
+
+<div class="toolbar">
+  <div class="input-group search">
+    <app-icon name="search" [size]="16" />
+    <input class="input" [(ngModel)]="q" (input)="onSearch()" placeholder="Search name, email or booking link" aria-label="Search practices">
+  </div>
+  <div class="seg" [appSegMarker]="status">
+    <span class="marker"></span>
+    @for (s of statuses; track s.key) { <button [class.on]="status === s.key" (click)="setStatus(s.key)">{{ s.label }}</button> }
+  </div>
+</div>
+
+<section class="panel">
+  @if (loading) {
+    <div class="pad">@for (i of [1, 2, 3, 4]; track i) { <div class="skeleton" style="height: 48px; margin-bottom: 8px"></div> }</div>
+  } @else if (error) {
+    <app-empty-state icon="alert" title="Couldn't load practices" [text]="error" />
+  } @else if (!rows.length) {
+    <app-empty-state icon="users" title="No practices here" text="Try another search or filter." />
+  } @else {
+    <div class="table-wrap">
+      <table class="table">
+        <thead><tr><th>Practice</th><th class="hide-sm">Owner</th><th>Status</th><th class="hide-sm">Access until</th><th class="num hide-sm">Clients</th><th class="hide-sm">Joined</th></tr></thead>
+        <tbody [@listStagger]="rows.length">
+          @for (r of rows; track r.id) {
+            <tr class="clickable" (click)="open(r)" tabindex="0" (keydown.enter)="open(r)">
+              <td><div class="row"><app-avatar [name]="r.name" [size]="32" /><span><strong>{{ r.name }}</strong><span class="sub">{{ r.profession }}</span></span></div></td>
+              <td class="hide-sm"><span>{{ r.ownerName }}</span><span class="sub">{{ r.ownerEmail }}</span></td>
+              <td><span class="pill" [class]="r.suspended ? 'SUSPENDED' : !r.emailVerified ? 'UNVERIFIED' : r.status">{{ statusLabel(r) }}</span></td>
+              <td class="hide-sm">{{ date(r.accessEndsAt) }}@if (r.status !== 'EXPIRED') { <span class="sub">{{ r.daysLeft }} days left</span> }</td>
+              <td class="num hide-sm">{{ r.clients }}</td>
+              <td class="hide-sm muted">{{ date(r.createdAt) }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</section>
+
+<app-drawer [open]="drawerOpen" [title]="detail?.practice?.name ?? 'Practice'" [subtitle]="detail ? detail.practice.profession + ', /book/' + detail.practice.slug : ''" (closed)="drawerOpen = false">
+  @if (!detail) {
+    <div class="skeleton" style="height: 320px"></div>
+  } @else {
+    <div class="status-card" [class]="detail.practice.suspended ? 'SUSPENDED' : detail.practice.status">
+      <span class="pill" [class]="detail.practice.suspended ? 'SUSPENDED' : detail.practice.status">{{ statusLabel(detail.practice) }}</span>
+      <strong>
+        @if (detail.practice.status === 'EXPIRED') { Access ended {{ date(detail.practice.accessEndsAt) }} }
+        @else { {{ detail.practice.daysLeft }} days left, until {{ date(detail.practice.accessEndsAt) }} }
+      </strong>
+      @if (detail.practice.suspended && detail.suspendedReason) { <span class="sub">Reason: {{ detail.suspendedReason }}</span> }
+    </div>
+
+    <dl class="facts">
+      <div><dt>Owner</dt><dd>{{ detail.practice.ownerName }}<span class="sub">{{ detail.practice.ownerEmail }}</span></dd></div>
+      <div><dt>Phone</dt><dd>{{ detail.phone || '—' }}</dd></div>
+      <div><dt>Clients</dt><dd>{{ detail.practice.clients }}</dd></div>
+      <div><dt>Appointments</dt><dd>{{ detail.appointments }}</dd></div>
+      <div><dt>Files stored</dt><dd>{{ storage(detail.storageBytes) }}</dd></div>
+      <div><dt>Joined</dt><dd>{{ date(detail.practice.createdAt) }}</dd></div>
+      <div class="wide"><dt>Billing</dt><dd>
+        @if (detail.billingName) { {{ detail.billingName }}<span class="sub">{{ detail.billingAddress }}, {{ detail.billingState }}@if (detail.billingGstin) {, GSTIN {{ detail.billingGstin }}}</span> }
+        @else { <span class="muted">Not filled in yet</span> }
+      </dd></div>
+    </dl>
+
+    <h3 class="section-title">Record a bank transfer or UPI payment</h3>
+    <p class="hint-text">Creates the GST invoice, emails it to them and extends their plan.</p>
+    <div class="field-row">
+      <div class="field">
+        <label for="p-plan">Plan</label>
+        <select id="p-plan" class="select" [(ngModel)]="pay.planCode" (ngModelChange)="onPlanChange()">
+          @for (p of plans; track p.code) { <option [value]="p.code">{{ p.name }} ({{ rupees(p.amountPaise) }})</option> }
+        </select>
+      </div>
+      <div class="field">
+        <label for="p-amt">Amount received (₹, incl. GST)</label>
+        <input id="p-amt" class="input" type="number" min="1" step="any" [(ngModel)]="pay.amountRupees">
+      </div>
+    </div>
+    <div class="field-row">
+      <div class="field">
+        <label for="p-ref">UTR or reference</label>
+        <input id="p-ref" class="input mono-in" [(ngModel)]="pay.reference" maxlength="80" placeholder="e.g. 426712345678">
+      </div>
+      @if (!detail.billingState) {
+        <div class="field">
+          <label for="p-state">Customer's state</label>
+          <select id="p-state" class="select" [(ngModel)]="pay.billingStateCode">
+            <option value="" disabled>Choose state</option>
+            @for (s of states; track s.code) { <option [value]="s.code">{{ s.name }}</option> }
+          </select>
+        </div>
+      }
+    </div>
+    <button class="btn btn-primary" (click)="recordPayment()" [disabled]="busy" appRipple><app-icon name="receipt" [size]="15" />Record payment</button>
+
+    <h3 class="section-title">Give extra days</h3>
+    <p class="hint-text">Free days for goodwill or a delayed payment. Adds to the trial if it's running, otherwise to the paid plan.</p>
+    <div class="extend">
+      <select class="select days" [(ngModel)]="extendDays" aria-label="Days">
+        @for (d of [7, 15, 30, 60, 90, 365]; track d) { <option [ngValue]="d">+{{ d }} days</option> }
+      </select>
+      <input class="input" [(ngModel)]="extendNote" maxlength="300" placeholder="Note for the log (optional)">
+      <button class="btn" (click)="extend()" [disabled]="busy">Add days</button>
+    </div>
+
+    @if (detail.payments.length) {
+      <h3 class="section-title">Payments</h3>
+      <ul class="pays">
+        @for (p of detail.payments; track p.id) {
+          <li>
+            <span class="grow"><strong>{{ rupees(p.amountPaise, 2) }}</strong><span class="sub">{{ p.planName }}, {{ date(p.paidAt) }}, {{ p.invoiceNumber }}</span></span>
+            <span class="pill" [class]="p.method">{{ p.method === 'MANUAL' ? 'Bank' : 'Razorpay' }}</span>
+            @if (p.invoiceNumber) { <button class="btn btn-sm" (click)="invoiceId = p.id">Invoice</button> }
+          </li>
+        }
+      </ul>
+    }
+
+    <h3 class="section-title danger-title">{{ detail.practice.suspended ? 'Restore access' : 'Suspend account' }}</h3>
+    @if (!detail.practice.suspended) {
+      <input class="input" [(ngModel)]="suspendReason" maxlength="300" placeholder="Reason (kept in the activity log)">
+    }
+    <button class="btn suspend" [class.btn-danger]="!detail.practice.suspended" (click)="toggleSuspend()" [disabled]="busy">
+      {{ detail.practice.suspended ? 'Restore this practice' : 'Suspend this practice' }}
+    </button>
+  }
+</app-drawer>
+
+<app-modal [open]="invoiceId !== null" title="Invoice" width="780px" (closed)="invoiceId = null">
+  @if (invoiceId !== null) { <app-tax-invoice [paymentId]="invoiceId" [admin]="true" /> }
+</app-modal>

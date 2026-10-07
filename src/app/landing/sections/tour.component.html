@@ -1,0 +1,123 @@
+<section class="tour" id="tour">
+  <div class="lp-head" appReveal>
+    <h2>Take a look inside</h2>
+    <p>Four screens you will use every day. Click through them.</p>
+  </div>
+
+  <div class="tabs" appReveal>
+    <div class="seg" [appSegMarker]="active.key" role="tablist" aria-label="Screens">
+      <span class="marker"></span>
+      @for (t of tabs; track t.key) {
+        <button role="tab" [class.on]="t === active" [attr.aria-selected]="t === active" (click)="select(t)">{{ t.label }}</button>
+      }
+    </div>
+  </div>
+
+  <div class="stage" appReveal [revealDelay]="120">
+    <div class="copy">
+      @for (t of [active]; track t.key) {
+        <div class="copy-inner" @fadeSlide>
+          <h3>{{ t.title }}</h3>
+          <p>{{ t.text }}</p>
+          <ul>
+            @for (pt of t.points; track pt) {
+              <li><span class="tick"><app-icon name="check" [size]="13" [stroke]="3" /></span>{{ pt }}</li>
+            }
+          </ul>
+        </div>
+      }
+    </div>
+
+    <div class="browser" aria-hidden="true">
+      <div class="bar"><i></i><i></i><i></i><span class="url">daysheet.in/app</span></div>
+      <div class="app">
+        <div class="side">
+          <span class="logo"><i></i><i></i><i></i></span>
+          @for (t of tabs; track t.key) {
+            <span class="nav-ic" [class.on]="t === active"><app-icon [name]="t.icon" [size]="16" /></span>
+          }
+        </div>
+
+        <div class="screen">
+          @switch (active.key) {
+            @case ('today') {
+              <div class="view" @fadeSlide>
+                <p class="hello">Good morning, Priya</p>
+                <div class="kpis">
+                  <div class="kpi dark"><span>Paid this month</span><strong>₹48,600</strong><em>+18% on last month</em></div>
+                  <div class="kpi"><span>Waiting to be paid</span><strong>₹5,400</strong><em class="warn">₹3,900 overdue</em></div>
+                  <div class="kpi"><span>No-show rate</span><strong>4.2%</strong><em>Last 30 days</em></div>
+                </div>
+                <div class="list">
+                  @for (r of todayRows; track r.time) {
+                    <div class="trow" [style.--c]="r.color" [class.past]="r.state === 'done'">
+                      <time>{{ r.time }}</time><span class="cbar"></span>
+                      <span class="who"><b>{{ r.name }}</b><small>{{ r.svc }}</small></span>
+                      <span class="pill" [class]="r.state">{{ r.label }}</span>
+                    </div>
+                    @if (r.time === '11:00') { <div class="now"><span>now</span></div> }
+                  }
+                </div>
+              </div>
+            }
+            @case ('calendar') {
+              <div class="view cal" @fadeSlide>
+                <div class="cal-head">
+                  <span></span>
+                  @for (d of calDays; track d.label) { <span [class.today]="d.today">{{ d.label }}<b>{{ d.date }}</b></span> }
+                </div>
+                <div class="cal-body">
+                  <div class="hours">@for (h of calHours; track h) { <span>{{ h }}</span> }</div>
+                  @for (col of calCols; track $index; let di = $index) {
+                    <div class="col" [class.today]="calDays[di].today">
+                      @for (blk of col; track blk.top) {
+                        <div class="cblk" [style.top.%]="blk.top" [style.height.%]="blk.height" [style.--c]="blk.color"
+                             [style.animation-delay.ms]="di * 60 + $index * 40">
+                          <b>{{ blk.name }}</b><small>{{ blk.svc }}</small>
+                        </div>
+                      }
+                    </div>
+                  }
+                </div>
+              </div>
+            }
+            @case ('profile') {
+              <div class="view prof" @fadeSlide>
+                <div class="p-head">
+                  <span class="av">AM</span>
+                  <div class="p-name"><b>Aarav Mehta</b><small>Patient since May 2026</small>
+                    <span class="tags"><i>Regular</i><i>Insurance</i></span>
+                  </div>
+                  <span class="p-btn">Book session</span>
+                </div>
+                <div class="p-stats">
+                  <div><span>Visits</span><b>12</b></div>
+                  <div><span>Total paid</span><b>₹10,800</b></div>
+                  <div><span>Next session</span><b>Thu, 10:30</b></div>
+                </div>
+                <ul class="p-notes">
+                  @for (n of notes; track n.date) { <li><time>{{ n.date }}</time><p>{{ n.text }}</p></li> }
+                </ul>
+              </div>
+            }
+            @case ('invoices') {
+              <div class="view inv" @fadeSlide>
+                <div class="sums">
+                  <div class="s"><span>Waiting</span><b>₹4,800</b></div>
+                  <div class="s warn"><span>Overdue</span><b>₹1,800</b></div>
+                  <div class="s good"><span>Paid this month</span><b>₹48,600</b></div>
+                </div>
+                <div class="itable">
+                  @for (r of invoiceRows; track r.no) {
+                    <div class="irow"><b class="no">{{ r.no }}</b><span class="nm">{{ r.name }}</span>
+                      <span class="pill" [class]="r.state">{{ r.label }}</span><b class="amt">{{ r.amount }}</b></div>
+                  }
+                </div>
+              </div>
+            }
+          }
+        </div>
+      </div>
+    </div>
+  </div>
+</section>

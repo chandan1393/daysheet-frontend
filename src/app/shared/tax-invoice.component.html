@@ -1,0 +1,74 @@
+@if (error) {
+  <app-empty-state icon="receipt" title="Invoice unavailable" [text]="error" />
+} @else if (!inv) {
+  <div class="skeleton" style="height: 460px"></div>
+} @else {
+  <div class="toolbar no-print">
+    <span class="spacer"></span>
+    <button class="btn btn-sm" (click)="print()"><app-icon name="printer" [size]="15" />Print or save PDF</button>
+  </div>
+
+  <article class="paper" #paper>
+    <header>
+      <div>
+        <h2>{{ inv.seller.name }}</h2>
+        <p>{{ inv.seller.address }}</p>
+        @if (inv.seller.gstin) { <p class="gst">GSTIN: <strong>{{ inv.seller.gstin }}</strong>, State: {{ inv.seller.stateName }} ({{ inv.seller.stateCode }})</p> }
+      </div>
+      <div class="title">
+        <span>{{ inv.gstRegistered ? 'Tax invoice' : 'Receipt' }}</span>
+        <strong>{{ inv.invoiceNumber }}</strong>
+        <em>{{ date(inv.invoiceDate) }}</em>
+      </div>
+    </header>
+
+    <section class="parties">
+      <div>
+        <span class="k">Billed to</span>
+        <strong>{{ inv.buyer.name }}</strong>
+        <span>{{ inv.buyer.address }}</span>
+        @if (inv.buyer.gstin) { <span>GSTIN: {{ inv.buyer.gstin }}</span> }
+      </div>
+      <div>
+        <span class="k">Place of supply</span>
+        <strong>{{ inv.placeOfSupply }}</strong>
+        @if (inv.periodStart && inv.periodEnd) {
+          <span class="k gap">Service period</span>
+          <span>{{ date(inv.periodStart) }} to {{ date(inv.periodEnd) }}</span>
+        }
+      </div>
+    </section>
+
+    <table class="items">
+      <thead>
+        <tr><th>Description</th>@if (inv.gstRegistered) { <th>SAC</th> }<th class="num">Taxable value</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>{{ inv.description }}</td>
+          @if (inv.gstRegistered) { <td>{{ inv.sac }}</td> }
+          <td class="num">{{ rupees(inv.taxablePaise) }}</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="sums">
+      <div><span>Taxable value</span><span>{{ rupees(inv.taxablePaise) }}</span></div>
+      @if (inv.cgstPaise || inv.sgstPaise) {
+        <div><span>CGST {{ half }}%</span><span>{{ rupees(inv.cgstPaise) }}</span></div>
+        <div><span>SGST {{ inv.gstRate - half }}%</span><span>{{ rupees(inv.sgstPaise) }}</span></div>
+      }
+      @if (inv.igstPaise) {
+        <div><span>IGST {{ inv.gstRate }}%</span><span>{{ rupees(inv.igstPaise) }}</span></div>
+      }
+      <div class="grand"><span>Total</span><span>{{ rupees(inv.totalPaise) }}</span></div>
+    </div>
+    <p class="words">{{ inWords }}</p>
+
+    <footer>
+      <p>Paid by {{ inv.paymentMethod === 'Bank transfer' ? 'bank transfer' : 'Razorpay' }}. Payment reference: {{ inv.razorpayPaymentId }}</p>
+      @if (inv.gstRegistered) { <p>Tax is not payable under reverse charge.</p> }
+      <p>This is a computer-generated invoice and does not need a signature.</p>
+    </footer>
+  </article>
+}

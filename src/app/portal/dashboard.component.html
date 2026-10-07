@@ -1,0 +1,148 @@
+<div class="page-head">
+  <div>
+    <h1>{{ hello }}, {{ firstName }}</h1>
+    <p>{{ dateLine }}@if (data) {. You have {{ data.stats.todayCount }} {{ data.stats.todayCount === 1 ? ('session' | term: true) : ('sessions' | term: true) }} today.}</p>
+  </div>
+  <button class="btn" (click)="copyLink()" appRipple><app-icon name="link" [size]="16" />Copy booking link</button>
+</div>
+
+@if (error) {
+  <div class="panel"><app-empty-state icon="alert" title="Your day didn't load" [text]="error"><button class="btn" (click)="load()">Try again</button></app-empty-state></div>
+} @else if (!data) {
+  <div class="kpis panel skel-row"><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div></div>
+  <div class="grid"><div class="panel skeleton tall"></div><div class="panel skeleton tall"></div></div>
+} @else {
+  <section class="kpis panel" aria-label="Key numbers">
+    <div class="kpi lead">
+      <span class="k">Paid this month</span>
+      <strong class="v" [appCountUp]="data.stats.monthRevenue" [format]="moneyFmt"></strong>
+      @if (revenueDelta !== null) {
+        <span class="delta" [class.down]="revenueDelta < 0">
+          <app-icon [name]="revenueDelta < 0 ? 'trend-down' : 'trend-up'" [size]="14" />
+          {{ revenueDelta < 0 ? '' : '+' }}{{ revenueDelta.toFixed(0) }}% on last month
+        </span>
+      } @else {
+        <span class="delta flat">First month of data</span>
+      }
+    </div>
+    <div class="kpi">
+      <span class="k">Waiting to be paid</span>
+      <strong class="v" [appCountUp]="data.stats.outstanding" [format]="moneyFmt"></strong>
+      @if (data.stats.overdue > 0) {
+        <a class="delta down" routerLink="/app/invoices" [queryParams]="{ filter: 'overdue' }">{{ data.stats.overdue | money }} overdue</a>
+      } @else { <span class="delta flat">Nothing overdue</span> }
+    </div>
+    <div class="kpi">
+      <span class="k">Active {{ 'clients' | term: true }}</span>
+      <strong class="v" [appCountUp]="data.stats.activeClients" [format]="intFmt"></strong>
+      <span class="delta flat">{{ data.stats.newClientsThisMonth }} new this month</span>
+    </div>
+    <div class="kpi">
+      <span class="k">No-show rate</span>
+      <strong class="v" [appCountUp]="data.stats.noShowRate * 100" [format]="pctFmt"></strong>
+      <span class="delta flat">Last 30 days</span>
+    </div>
+  </section>
+
+  <div class="grid">
+    <section class="panel today">
+      <div class="panel-head">
+        <h3>Today</h3>
+        <span class="muted small">{{ data.stats.weekCount }} this week</span>
+      </div>
+      @if (data.today.length) {
+        <ol class="timeline" [@listStagger]="data.today.length">
+          @if (nowIndex === -1) { <li class="now-line"><span>{{ now.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) }}</span></li> }
+          @for (a of data.today; track a.id; let i = $index) {
+            <li class="appt" [class.past]="isPast(a) && !isCurrent(a)" [class.current]="isCurrent(a)"
+                [class.cancelled]="a.status === 'CANCELLED' || a.status === 'NO_SHOW'" [style.--c]="a.color"
+                (click)="ui.showAppointment(a)" tabindex="0" (keydown.enter)="ui.showAppointment(a)">
+              <div class="time">
+                <strong>{{ a.startAt | hm }}</strong>
+                <span>{{ a.durationMinutes | duration }}</span>
+              </div>
+              <div class="body">
+                <div class="who">
+                  <strong>{{ a.clientName }}</strong>
+                  @if (a.source === 'ONLINE') { <span class="chip online">Booked online</span> }
+                </div>
+                <span class="what">{{ a.serviceName }}{{ a.price ? ', ' + (a.price | money) : '' }}</span>
+              </div>
+              <div class="actions">
+                @if (busyId === a.id) {
+                  <span class="spinner"></span>
+                } @else if (isOpen(a) && (isPast(a) || isCurrent(a))) {
+                  <button class="btn btn-sm btn-primary" (click)="setStatus(a, 'COMPLETED', $event)">Mark seen</button>
+                  <button class="btn btn-sm btn-ghost" (click)="setStatus(a, 'NO_SHOW', $event)">No-show</button>
+                } @else if (a.status === 'COMPLETED' && !a.invoiced && a.price) {
+                  <button class="btn btn-sm" (click)="invoice(a, $event)"><app-icon name="receipt" [size]="14" />Invoice</button>
+                } @else {
+                  <app-status-pill [status]="a.status" />
+                }
+              </div>
+            </li>
+            @if (i === nowIndex) { <li class="now-line"><span>{{ now.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) }}</span></li> }
+          }
+        </ol>
+      } @else {
+        <app-empty-state icon="calendar" title="Nothing booked today"
+                         [text]="'Share your booking link so ' + ('clients' | term: true) + ' can pick a time, or add one yourself.'">
+          <button class="btn btn-primary" (click)="ui.newAppointment()">Add a {{ 'session' | term: true }}</button>
+          <button class="btn" (click)="copyLink()">Copy booking link</button>
+        </app-empty-state>
+      }
+    </section>
+
+    <div class="side">
+      @if (auth.hasModule('CASES')) {
+        <section class="panel pack">
+          <div class="panel-head"><h3><app-icon name="briefcase" [size]="16" />Hearings this week</h3><a routerLink="/app/cases" class="small">All cases</a></div>
+          @if (!data.pack.upcomingHearings.length) { <p class="pack-empty">No hearings in the next 7 days.</p> }
+          <ul class="pack-list">
+            @for (h of data.pack.upcomingHearings; track h.id) {
+              <li><a routerLink="/app/cases" [queryParams]="{ open: h.caseId }">
+                <span class="pk-date" [class.soon]="h.hearingDate <= tomorrowStr">{{ h.hearingDate | dayLabel }}</span>
+                <span class="pk-main"><strong>{{ h.caseTitle }}</strong><span>{{ h.court || h.clientName }}{{ h.purpose ? ', ' + h.purpose : '' }}</span></span>
+              </a></li>
+            }
+          </ul>
+        </section>
+      }
+      @if (auth.hasModule('DEADLINES')) {
+        <section class="panel pack">
+          <div class="panel-head"><h3><app-icon name="clock" [size]="16" />Deadlines due</h3><a routerLink="/app/deadlines" class="small">All deadlines</a></div>
+          @if (!data.pack.dueDeadlines.length) { <p class="pack-empty">Nothing due in the next 7 days.</p> }
+          <ul class="pack-list">
+            @for (d of data.pack.dueDeadlines.slice(0, 6); track d.id) {
+              <li><a routerLink="/app/deadlines">
+                <span class="pk-date" [class.late]="d.overdue">{{ d.overdue ? 'Overdue' : (d.dueDate | dayLabel) }}</span>
+                <span class="pk-main"><strong>{{ d.title }}{{ d.period ? ' (' + d.period + ')' : '' }}</strong><span>{{ d.clientName }}</span></span>
+              </a></li>
+            }
+          </ul>
+          @if (data.pack.dueDeadlines.length > 6) { <a class="pack-more" routerLink="/app/deadlines">and {{ data.pack.dueDeadlines.length - 6 }} more</a> }
+        </section>
+      }
+      <section class="panel">
+        <div class="panel-head"><h3>Paid per month</h3></div>
+        <div class="chart-pad"><app-revenue-chart [data]="data.revenue" /></div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-head"><h3>Coming up</h3><a routerLink="/app/calendar" class="small">Calendar</a></div>
+        @if (data.upcoming.length) {
+          <ul class="upcoming">
+            @for (a of data.upcoming; track a.id) {
+              <li (click)="ui.showAppointment(a)" [style.--c]="a.color">
+                <span class="date"><strong>{{ a.startAt | dayLabel }}</strong><span>{{ a.startAt | hm }}</span></span>
+                <span class="info"><strong>{{ a.clientName }}</strong><span>{{ a.serviceName }}</span></span>
+              </li>
+            }
+          </ul>
+        } @else {
+          <p class="muted pad">Nothing booked for the next two weeks yet.</p>
+        }
+      </section>
+    </div>
+  </div>
+}

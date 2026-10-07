@@ -1,0 +1,18 @@
+.lines-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 8px; }
+.quick { width: auto; max-width: 230px; height: 34px; font-size: 13px; }
+.lines { display: flex; flex-direction: column; gap: 8px; }
+.line { display: grid; grid-template-columns: 1fr 58px 90px 76px 32px; gap: 6px; align-items: center; }
+.line .input { height: 38px; padding: 0 9px; font-size: 14px; }
+.total { text-align: right; font-size: 13.5px; color: var(--muted); }
+.add { margin-top: 8px; color: var(--lagoon-deep); }
+.totals {
+  margin: 18px 0; padding: 14px 16px; background: var(--paper); border-radius: 14px; display: flex; flex-direction: column; gap: 8px;
+  .tax .input { width: 70px; height: 32px; padding: 0 8px; }
+  .grand { padding-top: 8px; border-top: 1px dashed var(--line-strong); strong { font-family: var(--font-display); font-size: 20px; color: var(--ink); } }
+}
+.err { color: var(--danger); font-size: 14px; margin-bottom: 10px; }
+.actions { display: flex; gap: 10px; align-items: center; margin-top: 8px; }
+@media (max-width: 480px) {
+  .line { grid-template-columns: 1fr 52px 80px 32px; }
+  .total { display: none; }
+}

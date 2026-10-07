@@ -1,0 +1,268 @@
+<div class="page-head">
+  <div>
+    <h1>Settings</h1>
+    <p>How your practice appears to you and to the people who book with you.</p>
+  </div>
+</div>
+
+<div class="layout">
+  <nav class="tabs" aria-label="Settings sections">
+    @for (t of tabs; track t.key) {
+      <button [class.on]="tab === t.key" (click)="selectTab(t.key)">{{ t.label }}</button>
+    }
+  </nav>
+
+  <div class="pane">
+    @switch (tab) {
+      @case ('practice') {
+        <section class="panel panel-pad" @fadeSlide>
+          <h2>Practice details</h2>
+          <p class="intro">Shown on your booking page and on every invoice.</p>
+          <div class="field"><label for="pname">Practice name</label><input id="pname" class="input" [(ngModel)]="model.name"></div>
+          <div class="field-row">
+            <div class="field"><label for="pphone">Phone</label><input id="pphone" class="input" type="tel" [(ngModel)]="model.phone"></div>
+            <div class="field"><label for="pemail">Email</label><input id="pemail" class="input" type="email" [(ngModel)]="model.email"></div>
+          </div>
+          <div class="field"><label for="paddr">Address</label><textarea id="paddr" class="textarea" rows="2" [(ngModel)]="model.address"></textarea></div>
+          <div class="field-row">
+            <div class="field">
+              <label for="pcur">Currency</label>
+              <select id="pcur" class="select" [(ngModel)]="model.currency">
+                @for (c of currencies; track c) { <option [value]="c">{{ c }}</option> }
+              </select>
+            </div>
+            <div class="field">
+              <label for="ptz">Timezone</label>
+              <select id="ptz" class="select" [(ngModel)]="model.timezone">
+                @for (z of timezones; track z) { <option [value]="z">{{ z }}</option> }
+              </select>
+            </div>
+          </div>
+          @if (auth.hasModule('PRESCRIPTIONS')) {
+            <h3 class="sub-title">On your prescriptions</h3>
+            <div class="field-row">
+              <div class="field"><label for="p-title">Your name and qualifications</label><input id="p-title" class="input" [(ngModel)]="model.practitionerTitle" maxlength="160" placeholder="Dr. Priya Mehta, MBBS, MD (Medicine)"></div>
+              <div class="field"><label for="p-reg">Registration number</label><input id="p-reg" class="input" [(ngModel)]="model.registrationNumber" maxlength="80" placeholder="DMC/R/12345"></div>
+            </div>
+          }
+          <div class="bar"><button class="btn btn-primary" (click)="save()" [disabled]="saving" appRipple>Save changes</button></div>
+        </section>
+      }
+
+      @case ('features') {
+        <section class="panel panel-pad" @fadeSlide>
+          <h2>Features for your profession</h2>
+          <p class="intro">Switch on what fits your work. We turned on the ones made for {{ auth.workspace?.professionName?.toLowerCase() }}s.</p>
+          <div class="modules">
+            @for (m of moduleInfo; track m.key) {
+              <div class="module" [class.on]="isOn(m.key)">
+                <span class="m-ic"><app-icon [name]="m.icon" [size]="20" /></span>
+                <div class="m-body">
+                  <strong>{{ m.title }}</strong>
+                  <span class="m-for">{{ m.for }}</span>
+                  <p>{{ m.text }}</p>
+                </div>
+                <label class="switch">
+                  <input type="checkbox" [checked]="isOn(m.key)" (change)="toggleModule(m.key)" [disabled]="savingModules" [attr.aria-label]="m.title">
+                  <span class="track"></span>
+                </label>
+              </div>
+            }
+          </div>
+        </section>
+      }
+
+      @case ('words') {
+        <section class="panel panel-pad" @fadeSlide>
+          <h2>Your words</h2>
+          <p class="intro">Call people and visits whatever you call them at work. The whole app follows.</p>
+          <div class="presets">
+            @for (p of professions; track p.code) {
+              <button class="chip-btn" (click)="applyPreset(p)">{{ p.name }}</button>
+            }
+          </div>
+          <div class="field-row">
+            <div class="field"><label for="wone">One person</label><input id="wone" class="input" [(ngModel)]="model.clientLabel" placeholder="Patient"></div>
+            <div class="field"><label for="wmany">Many people</label><input id="wmany" class="input" [(ngModel)]="model.clientLabelPlural" placeholder="Patients"></div>
+          </div>
+          <div class="field"><label for="wvisit">A visit</label><input id="wvisit" class="input" [(ngModel)]="model.sessionLabel" placeholder="Consultation"></div>
+
+          <div class="preview" aria-label="Preview">
+            <div class="pv-side">
+              <span><app-icon name="today" [size]="15" />Today</span>
+              <span class="on"><app-icon name="users" [size]="15" />{{ model.clientLabelPlural || 'Clients' }}</span>
+              <span><app-icon name="receipt" [size]="15" />Invoices</span>
+            </div>
+            <div class="pv-main">
+              <span class="pv-btn"><app-icon name="plus" [size]="13" [stroke]="2.6" />New {{ (model.sessionLabel || 'appointment').toLowerCase() }}</span>
+              <p>Add your first {{ (model.clientLabel || 'client').toLowerCase() }}</p>
+            </div>
+          </div>
+          <div class="bar"><button class="btn btn-primary" (click)="save()" [disabled]="saving" appRipple>Save changes</button></div>
+        </section>
+      }
+
+      @case ('hours') {
+        <section class="panel panel-pad" @fadeSlide>
+          <h2>Opening hours</h2>
+          <p class="intro">Online bookings are only offered inside these hours.</p>
+          <div class="hours">
+            @for (h of hours; track h.dayOfWeek) {
+              <div class="day" [class.closed]="!h.enabled">
+                <label class="switch">
+                  <input type="checkbox" [(ngModel)]="h.enabled">
+                  <span class="track"></span>
+                  <span class="dname">{{ dayNames[h.dayOfWeek - 1] }}</span>
+                </label>
+                @if (h.enabled) {
+                  <div class="times">
+                    <input class="input" type="time" [(ngModel)]="h.startTime" [attr.aria-label]="dayNames[h.dayOfWeek - 1] + ' opens'">
+                    <span class="muted">to</span>
+                    <input class="input" type="time" [(ngModel)]="h.endTime" [attr.aria-label]="dayNames[h.dayOfWeek - 1] + ' closes'">
+                  </div>
+                } @else {
+                  <span class="faint closed-label">Closed</span>
+                }
+              </div>
+            }
+          </div>
+          <div class="bar">
+            <button class="btn btn-ghost" (click)="copyFromMonday()">Copy Monday to weekdays</button>
+            <span class="spacer"></span>
+            <button class="btn btn-primary" (click)="saveHours()" [disabled]="savingHours" appRipple>Save hours</button>
+          </div>
+        </section>
+      }
+
+      @case ('booking') {
+        <section class="panel panel-pad" @fadeSlide>
+          <h2>Booking page</h2>
+          <p class="intro">Anyone with this link can book a free slot. Put it in your WhatsApp status, Instagram bio and Google profile.</p>
+          <div class="link-box">
+            <app-icon name="globe" [size]="18" />
+            <span class="url">{{ bookingUrl }}</span>
+            <button class="btn btn-sm" (click)="copyLink()"><app-icon name="copy" [size]="14" />Copy</button>
+            <a class="btn btn-sm" [href]="bookingUrl" target="_blank" rel="noopener"><app-icon name="external" [size]="14" />Open</a>
+          </div>
+          <a class="btn btn-sm share" [href]="whatsappShare" target="_blank" rel="noopener"><app-icon name="message" [size]="15" />Share on WhatsApp</a>
+
+          <div class="field slot">
+            <label for="slot">Start times every</label>
+            <select id="slot" class="select" [(ngModel)]="model.slotMinutes">
+              @for (s of slotOptions; track s) { <option [ngValue]="s">{{ s }} minutes</option> }
+            </select>
+            <span class="hint">With 30 minutes, people can book 9:00, 9:30, 10:00 and so on.</span>
+          </div>
+          <p class="muted small">Choose which services appear on the page in <a routerLink="/app/services">Services</a>.</p>
+          <div class="bar"><button class="btn btn-primary" (click)="save()" [disabled]="saving" appRipple>Save changes</button></div>
+        </section>
+      }
+
+      @case ('plan') {
+        <section class="panel panel-pad" @fadeSlide>
+          <h2>Your plan</h2>
+          @let w = auth.workspace;
+          @if (w?.expired) {
+            <div class="status expired">
+              <strong>Your plan has ended</strong>
+              <span>Everything is still here and readable. Choose a plan below to take bookings and make changes again.</span>
+            </div>
+          } @else if (w?.plan === 'TRIAL') {
+            <div class="status trial">
+              <strong>{{ w?.daysLeft }} {{ w?.daysLeft === 1 ? 'day' : 'days' }} left in your free trial</strong>
+              <span>Ends on {{ trialEnds }}. Pay any time; the days you have left are added on, never lost.</span>
+            </div>
+          } @else {
+            <div class="status active">
+              <strong>Active until {{ date(w?.subscriptionEndsAt) }}</strong>
+              <span>{{ w?.daysLeft }} days left. Renew early and the new period starts when this one ends.</span>
+            </div>
+          }
+
+          <div class="billing" [class.done]="billingSaved">
+            <div class="b-head">
+              <h3>Billing details</h3>
+              <span class="muted small">Printed on your GST invoice</span>
+            </div>
+            <div class="field">
+              <label for="b-name">Name on invoice</label>
+              <input id="b-name" class="input" [(ngModel)]="billing.name" maxlength="120" placeholder="Your practice or legal name">
+            </div>
+            <div class="field">
+              <label for="b-addr">Billing address</label>
+              <textarea id="b-addr" class="textarea" rows="2" [(ngModel)]="billing.address" maxlength="300"></textarea>
+            </div>
+            <div class="field-row">
+              <div class="field">
+                <label for="b-state">State</label>
+                <select id="b-state" class="select" [(ngModel)]="billing.stateCode">
+                  <option value="" disabled>Choose your state</option>
+                  @for (st of states; track st.code) { <option [value]="st.code">{{ st.name }}</option> }
+                </select>
+              </div>
+              <div class="field">
+                <label for="b-gst">GSTIN <span class="faint">(optional)</span></label>
+                <input id="b-gst" class="input mono" [(ngModel)]="billing.gstin" maxlength="15" placeholder="22AAAAA0000A1Z5"
+                       (ngModelChange)="billing.gstin = $event.toUpperCase()">
+                <span class="hint">Add it to claim input tax credit.</span>
+              </div>
+            </div>
+            <div class="b-bar">
+              @if (billingSaved) { <span class="saved"><app-icon name="check" [size]="14" [stroke]="2.8" />Saved</span> }
+              <span class="spacer"></span>
+              <button class="btn btn-sm btn-ink" (click)="saveBilling()" [disabled]="savingBilling">Save billing details</button>
+            </div>
+          </div>
+
+          <div class="plans">
+            @for (p of plans; track p.code) {
+              <div class="plan" [class.best]="p.highlighted">
+                <span class="pname">{{ p.name }} @if (p.badge) { <span class="save">{{ p.badge }}</span> }</span>
+                <strong>{{ rupees(p.totalPaise) }}</strong>
+                <span class="muted">per {{ p.intervalLabel }}{{ p.gstRate ? ', incl. ' + p.gstRate + '% GST' : '' }}@if (p.description) {. {{ p.description }}}</span>
+                <button class="btn" [class.btn-primary]="p.highlighted" (click)="pay(p)" [disabled]="!!payingCode || !billingSaved" appRipple>
+                  @if (payingCode === p.code) { <span class="spinner"></span>Opening payment… }
+                  @else if (!billingSaved) { Add billing details first }
+                  @else { Pay {{ rupees(p.totalPaise) }} }
+                </button>
+                <a class="mail" [href]="mailto(p)"><app-icon name="mail" [size]="14" />Pay by bank transfer instead</a>
+              </div>
+            } @empty {
+              <div class="skeleton" style="height: 180px"></div>
+              <div class="skeleton" style="height: 180px"></div>
+            }
+          </div>
+          <p class="secure"><app-icon name="check" [size]="14" [stroke]="2.6" />UPI, cards, net banking and wallets, processed securely by Razorpay. We never see your card details.</p>
+
+          @if (payments.length) {
+            <h3 class="hist-title">Payments</h3>
+            <div class="table-wrap">
+              <table class="table">
+                <thead><tr><th>Date</th><th>Invoice</th><th>Plan</th><th>Covers until</th><th class="num">Amount</th><th></th></tr></thead>
+                <tbody>
+                  @for (p of payments; track p.id) {
+                    <tr>
+                      <td>{{ date(p.paidAt) }}</td>
+                      <td class="ref">{{ p.invoiceNumber ?? '—' }}</td>
+                      <td>{{ p.planName }}</td>
+                      <td class="muted">{{ date(p.periodEnd) }}</td>
+                      <td class="num"><strong>{{ rupees(p.amountPaise, 2) }}</strong></td>
+                      <td class="num">
+                        @if (p.invoiceNumber) { <button class="btn btn-sm" (click)="invoiceId = p.id"><app-icon name="receipt" [size]="14" />Invoice</button> }
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          }
+          <p class="muted small help">Questions about billing? Email <a [href]="'mailto:' + contactEmail">{{ contactEmail }}</a>.</p>
+        </section>
+      }
+    }
+  </div>
+</div>
+
+<app-modal [open]="invoiceId !== null" title="Invoice" width="780px" (closed)="invoiceId = null">
+  @if (invoiceId !== null) { <app-tax-invoice [paymentId]="invoiceId" /> }
+</app-modal>

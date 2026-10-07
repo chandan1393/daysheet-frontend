@@ -1,0 +1,75 @@
+<datalist id="rx-medicines">@for (m of suggestions; track m) { <option [value]="m"></option> }</datalist>
+<datalist id="rx-freq">@for (f of frequencies; track f) { <option [value]="f"></option> }</datalist>
+<datalist id="rx-timing">@for (t of timings; track t) { <option [value]="t"></option> }</datalist>
+<datalist id="rx-duration">@for (d of durations; track d) { <option [value]="d"></option> }</datalist>
+
+@if (request.repeatFrom) {
+  <p class="repeat"><app-icon name="repeat" [size]="15" />Copied from the last prescription. Change anything that's different today.</p>
+}
+
+<div class="field">
+  <label for="rx-vitals">Vitals</label>
+  <input id="rx-vitals" class="input" [(ngModel)]="vitals" maxlength="300" placeholder="BP 120/80, Pulse 72, Temp 98.6 F, Weight 70 kg">
+</div>
+<div class="field-row">
+  <div class="field">
+    <label for="rx-comp">Complaints</label>
+    <textarea id="rx-comp" class="textarea" rows="2" [(ngModel)]="complaints" maxlength="1000" placeholder="Fever and cough for 3 days"></textarea>
+  </div>
+  <div class="field">
+    <label for="rx-diag">Diagnosis</label>
+    <textarea id="rx-diag" class="textarea" rows="2" [(ngModel)]="diagnosis" maxlength="1000" placeholder="Acute bronchitis"></textarea>
+  </div>
+</div>
+
+<div class="rx-head">
+  <span class="rx-mark">Rx</span>
+  <span class="muted small">Frequency is morning-afternoon-night, so 1-0-1 means morning and night.</span>
+</div>
+<div class="rx-table">
+  <div class="rx-row labels" aria-hidden="true">
+    <span>Medicine</span><span>Dose</span><span>Frequency</span><span>When</span><span>For</span><span></span>
+  </div>
+  @for (l of lines; track l.key; let i = $index) {
+    <div class="rx-row" @fadeSlide>
+      <input class="input med" list="rx-medicines" [(ngModel)]="l.medicine" (ngModelChange)="onMedicineInput($event)"
+             [attr.aria-label]="'Medicine ' + (i + 1)" placeholder="Medicine and strength" maxlength="160">
+      <input class="input" [(ngModel)]="l.dose" aria-label="Dose" placeholder="1 tablet" maxlength="60">
+      <input class="input" list="rx-freq" [(ngModel)]="l.frequency" aria-label="Frequency" placeholder="1-0-1" maxlength="40">
+      <input class="input" list="rx-timing" [(ngModel)]="l.timing" aria-label="When" placeholder="After food" maxlength="60">
+      <input class="input" list="rx-duration" [(ngModel)]="l.duration" aria-label="Duration" placeholder="5 days" maxlength="40">
+      <span class="row-actions">
+        <button type="button" class="btn btn-ghost btn-icon btn-sm" (click)="move(l, -1)" [disabled]="i === 0" aria-label="Move up"><app-icon name="chevron-down" [size]="14" class="up" /></button>
+        <button type="button" class="btn btn-ghost btn-icon btn-sm" (click)="removeLine(l)" aria-label="Remove"><app-icon name="x" [size]="14" /></button>
+      </span>
+      <input class="input note" [(ngModel)]="l.notes" aria-label="Note" placeholder="Note (optional), e.g. stop if rash appears" maxlength="200">
+    </div>
+  }
+</div>
+<button type="button" class="btn btn-ghost btn-sm add" (click)="addLine()"><app-icon name="plus" [size]="15" />Add medicine</button>
+
+<div class="field-row">
+  <div class="field">
+    <label for="rx-tests">Tests advised</label>
+    <input id="rx-tests" class="input" [(ngModel)]="tests" maxlength="1000" placeholder="CBC, Chest X-ray">
+  </div>
+  <div class="field">
+    <label for="rx-follow">Follow-up</label>
+    <div class="follow">
+      <input id="rx-follow" class="input" type="date" [(ngModel)]="followUpDate">
+      @for (d of followUps; track d) { <button type="button" class="chip-btn" (click)="setFollowUp(d)">{{ d < 30 ? d + 'd' : '1m' }}</button> }
+    </div>
+  </div>
+</div>
+<div class="field">
+  <label for="rx-advice">Advice</label>
+  <textarea id="rx-advice" class="textarea" rows="3" [(ngModel)]="advice" maxlength="4000" placeholder="Plenty of fluids. Steam inhalation twice a day. Avoid cold drinks."></textarea>
+</div>
+
+@if (error) { <p class="err">{{ error }}</p> }
+<div class="actions">
+  <button type="button" class="btn" (click)="cancelled.emit()">Cancel</button>
+  <button type="button" class="btn btn-primary" (click)="save()" [disabled]="saving" appRipple>
+    @if (saving) { <span class="spinner"></span> } Save prescription
+  </button>
+</div>

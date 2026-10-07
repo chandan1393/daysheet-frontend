@@ -1,0 +1,68 @@
+:host { display: block; }
+.err { color: var(--danger); font-size: 14px; margin-top: 16px; }
+
+.previous {
+  margin-top: 18px; border-radius: 14px; background: var(--marigold-wash); border: 1px solid color-mix(in srgb, var(--marigold) 35%, transparent);
+  overflow: hidden;
+}
+.prev-head {
+  width: 100%; display: flex; align-items: center; gap: 10px; padding: 12px 14px; border: 0; background: none; cursor: pointer; text-align: left;
+}
+.prev-ic { width: 30px; height: 30px; border-radius: 9px; display: grid; place-items: center; background: var(--marigold); color: var(--ink); flex-shrink: 0; }
+.prev-title { flex: 1; display: flex; flex-direction: column; strong { color: var(--ink); font-size: 14px; } span { font-size: 12.5px; color: var(--marigold-deep); } }
+.chev { color: var(--marigold-deep); transition: transform .3s var(--ease-spring); }
+.collapsed .chev { transform: rotate(-90deg); }
+.prev-body { padding: 0 14px 14px 54px; }
+.prev-note { font-size: 14px; color: var(--text); white-space: pre-line; padding: 6px 0; border-top: 1px dashed color-mix(in srgb, var(--marigold) 40%, transparent); }
+.prev-note:first-child { border-top: 0; padding-top: 0; }
+.none { font-size: 13.5px; color: var(--marigold-deep); }
+
+.first {
+  display: flex; align-items: center; gap: 8px; margin-top: 18px; padding: 10px 12px; border-radius: 12px;
+  background: var(--lagoon-wash); color: var(--lagoon-deep); font-size: 13.5px;
+}
+
+.current { margin-top: 18px; }
+.cur-head { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; h3 { font-size: 16px; } }
+.badge { font-size: 12px; font-weight: 700; color: var(--iris); background: var(--iris-wash); padding: 2px 9px; border-radius: 99px; }
+
+.notes {
+  list-style: none; margin: 0 0 10px; padding: 0; display: flex; flex-direction: column; gap: 8px;
+  li { background: var(--paper); border-radius: 12px; padding: 10px 12px; }
+  p { font-size: 14px; white-space: pre-line; }
+}
+.note-meta { display: flex; gap: 8px; align-items: center; font-size: 12px; color: var(--faint); margin-top: 4px; }
+.link-del { border: 0; background: none; color: var(--faint); font-size: 12px; cursor: pointer; padding: 0; margin-left: auto; &:hover { color: var(--danger); } }
+
+.composer {
+  border: 1px solid var(--line-strong); border-radius: 14px; overflow: hidden; transition: border-color .2s, box-shadow .2s;
+  &:focus-within { border-color: var(--lagoon); box-shadow: 0 0 0 4px rgba(14, 124, 134, .12); }
+  .textarea { border: 0; border-radius: 0; box-shadow: none !important; min-height: 76px; }
+}
+.composer-bar { display: flex; align-items: center; gap: 8px; padding: 8px 10px; background: var(--paper); }
+
+.docs { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.uploading { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); padding: 10px 12px; border-radius: 12px; border: 1px dashed var(--line-strong); .spinner { width: 14px; height: 14px; color: var(--lagoon); } }
+.hint { font-size: 12.5px; color: var(--faint); margin-top: 8px; }
+
+.follow { margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--line); }
+.f-label { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; color: var(--ink); margin-bottom: 8px; }
+.f-opts { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.f-btn {
+  display: flex; flex-direction: column; align-items: flex-start; padding: 9px 12px; border-radius: 12px; cursor: pointer;
+  border: 1px solid var(--line-strong); background: var(--surface); text-align: left; transition: all .2s var(--ease-out);
+  strong { font-size: 14px; color: var(--ink); } span { font-size: 12px; color: var(--muted); }
+  &:hover { border-color: var(--lagoon); background: var(--lagoon-wash); transform: translateY(-2px); strong { color: var(--lagoon-deep); } }
+}
+
+.rx-chip {
+  display: flex; align-items: center; gap: 10px; width: 100%; text-align: left; margin-top: 8px; padding: 9px 12px; border-radius: 12px;
+  border: 1px solid color-mix(in srgb, var(--marigold) 40%, transparent); background: rgba(255, 255, 255, .6); cursor: pointer;
+  app-icon:first-child { color: var(--lagoon-deep); flex-shrink: 0; }
+  span { flex: 1; min-width: 0; font-size: 13px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  strong { color: var(--ink); margin-right: 6px; }
+  &.current { border-color: var(--lagoon); background: var(--lagoon-wash); margin: 0 0 8px; }
+  &:hover { border-color: var(--lagoon); }
+}
+.rx-block { margin-bottom: 12px; }
+.rx-actions { display: flex; gap: 8px; flex-wrap: wrap; }

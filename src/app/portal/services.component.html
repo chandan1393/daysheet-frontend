@@ -1,0 +1,146 @@
+<div class="page-head">
+  <div>
+    <h1>Services</h1>
+    <p>What people can book, how long it takes and what it costs.</p>
+  </div>
+  <button class="btn btn-primary" (click)="openNew()" appRipple><app-icon name="plus" [size]="17" [stroke]="2.5" />Add service</button>
+</div>
+
+@if (loading) {
+  <div class="grid">
+    @for (i of [1, 2, 3]; track i) { <div class="skeleton" style="height: 150px; border-radius: 18px"></div> }
+  </div>
+} @else if (error) {
+  <section class="panel"><app-empty-state icon="alert" title="Couldn't load services" [text]="error"><button class="btn" (click)="load()">Try again</button></app-empty-state></section>
+} @else if (!services.length) {
+  <section class="panel">
+    <app-empty-state icon="layers" title="Add what you offer" text="Each service has a length and a price. Clients pick one when they book online.">
+      <button class="btn btn-primary" (click)="openNew()">Add service</button>
+    </app-empty-state>
+  </section>
+} @else {
+  <div class="grid" [@listStagger]="services.length">
+    @for (s of services; track s.id) {
+      <article class="svc" [style.--c]="s.color">
+        <button class="svc-main" (click)="openEdit(s)" [attr.aria-label]="'Edit ' + s.name">
+          <span class="swatch"></span>
+          <h3>{{ s.name }}</h3>
+          @if (s.description) { <p class="desc">{{ s.description }}</p> }
+          <p class="facts"><span><app-icon name="clock" [size]="14" />{{ s.durationMinutes | duration }}</span><strong>{{ s.price ? (s.price | money) : 'Free' }}</strong></p>
+        </button>
+        <label class="switch online">
+          <input type="checkbox" [checked]="s.bookableOnline" (change)="toggleOnline(s)">
+          <span class="track"></span>
+          <span>{{ s.bookableOnline ? 'Bookable online' : 'Only you can book' }}</span>
+        </label>
+      </article>
+    }
+  </div>
+}
+
+@if (auth.hasModule('PACKAGES')) {
+  <div class="page-head pk-head">
+    <div>
+      <h2>Packages</h2>
+      <p>Sell several sessions at once. Each completed visit uses one up automatically.</p>
+    </div>
+    <button class="btn" (click)="openPackage()"><app-icon name="plus" [size]="16" [stroke]="2.5" />New package</button>
+  </div>
+  @if (!packages.length) {
+    <section class="panel"><app-empty-state icon="package" title="No packages yet" text="For example: 10 sessions for the price of 9, valid for 4 months." /></section>
+  } @else {
+    <div class="grid">
+      @for (t of packages; track t.id) {
+        <button class="pkg-card" (click)="openPackage(t)">
+          <span class="pkg-ic"><app-icon name="package" [size]="18" /></span>
+          <strong>{{ t.name }}</strong>
+          <span class="pkg-meta">{{ t.sessions }} sessions{{ t.validityDays ? ', valid ' + t.validityDays + ' days' : '' }}{{ t.serviceName ? ', ' + t.serviceName + ' only' : '' }}</span>
+          <span class="pkg-price">{{ t.price | money }}<small>{{ perSession(t) | money }} per session</small></span>
+        </button>
+      }
+    </div>
+  }
+}
+
+<app-drawer [open]="drawerOpen" [title]="editing ? 'Edit service' : 'New service'" (closed)="drawerOpen = false">
+  <form (ngSubmit)="save()" class="form">
+    <div class="preview" [style.--c]="model.color">
+      <span class="pv-bar"></span>
+      <div><strong>{{ model.name || 'Service name' }}</strong><span>{{ model.durationMinutes | duration }}, {{ model.price ? (model.price | money) : 'free' }}</span></div>
+    </div>
+
+    <div class="field">
+      <label for="sname">Name</label>
+      <input id="sname" class="input" name="name" [(ngModel)]="model.name" placeholder="e.g. Initial consultation" required>
+    </div>
+    <div class="field">
+      <label for="sdesc">Description</label>
+      <textarea id="sdesc" class="textarea" name="desc" rows="2" [(ngModel)]="model.description" placeholder="Shown on your booking page"></textarea>
+    </div>
+    <div class="field">
+      <label for="sdur">Length in minutes</label>
+      <div class="dur">
+        @for (d of durationPresets; track d) {
+          <button type="button" class="chip-btn" [class.on]="model.durationMinutes === d" (click)="model.durationMinutes = d">{{ d }}</button>
+        }
+        <input id="sdur" class="input" type="number" min="5" max="600" step="5" name="dur" [(ngModel)]="model.durationMinutes">
+      </div>
+    </div>
+    <div class="field">
+      <label for="sprice">Price</label>
+      <input id="sprice" class="input" type="number" min="0" step="any" name="price" [(ngModel)]="model.price">
+      <span class="hint">Use 0 for free services such as a discovery call.</span>
+    </div>
+    <div class="field">
+      <span class="label">Colour on your calendar</span>
+      <div class="colors" role="radiogroup" aria-label="Colour">
+        @for (c of colors; track c) {
+          <button type="button" role="radio" [attr.aria-checked]="model.color === c" [class.on]="model.color === c"
+                  [style.background]="c" (click)="model.color = c" [attr.aria-label]="c"></button>
+        }
+      </div>
+    </div>
+    <label class="switch">
+      <input type="checkbox" name="online" [(ngModel)]="model.bookableOnline">
+      <span class="track"></span>
+      <span>Clients can book this online</span>
+    </label>
+    @if (formError) { <p class="err">{{ formError }}</p> }
+
+    <div class="actions">
+      @if (editing) { <button type="button" class="btn btn-danger" (click)="remove(editing)">Remove</button> }
+      <span class="spacer"></span>
+      <button type="button" class="btn" (click)="drawerOpen = false">Cancel</button>
+      <button type="submit" class="btn btn-primary" [disabled]="saving" appRipple>{{ editing ? 'Save changes' : 'Add service' }}</button>
+    </div>
+  </form>
+</app-drawer>
+
+<app-drawer [open]="pkgOpen" [title]="pkgEditing ? 'Edit package' : 'New package'" (closed)="pkgOpen = false">
+  <div class="field"><label for="pk-name">Name</label><input id="pk-name" class="input" [(ngModel)]="pkg.name" maxlength="120" placeholder="Physio, pack of 10"></div>
+  <div class="field-row">
+    <div class="field"><label for="pk-s">Sessions</label><input id="pk-s" class="input" type="number" min="1" max="500" [(ngModel)]="pkg.sessions"></div>
+    <div class="field"><label for="pk-p">Price</label><input id="pk-p" class="input" type="number" min="0" step="any" [(ngModel)]="pkg.price"></div>
+  </div>
+  <div class="field-row">
+    <div class="field">
+      <label for="pk-v">Valid for (days)</label>
+      <input id="pk-v" class="input" type="number" min="1" [(ngModel)]="pkg.validityDays" placeholder="No expiry">
+      <span class="hint">Leave empty for no expiry.</span>
+    </div>
+    <div class="field">
+      <label for="pk-svc">Counts visits for</label>
+      <select id="pk-svc" class="select" [(ngModel)]="pkg.serviceId">
+        <option [ngValue]="null">Any service</option>
+        @for (s of services; track s.id) { <option [ngValue]="s.id">{{ s.name }}</option> }
+      </select>
+    </div>
+  </div>
+  @if (pkg.sessions > 0) { <p class="muted">{{ perSession(pkg) | money }} per session.</p> }
+  <div class="actions">
+    @if (pkgEditing) { <button class="btn btn-danger" (click)="removePackage(pkgEditing)">Stop selling</button> }
+    <span class="spacer"></span>
+    <button class="btn" (click)="pkgOpen = false">Cancel</button>
+    <button class="btn btn-primary" (click)="savePackage()" appRipple>Save package</button>
+  </div>
+</app-drawer>

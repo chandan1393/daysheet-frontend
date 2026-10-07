@@ -1,0 +1,69 @@
+<div class="page-head">
+  <div>
+    <h1>Invoices</h1>
+    <p>Bill a finished appointment in one click, or write an invoice from scratch.</p>
+  </div>
+  <button class="btn btn-primary" (click)="ui.openInvoiceForm()" appRipple><app-icon name="plus" [size]="17" [stroke]="2.5" />New invoice</button>
+</div>
+
+<div class="summary">
+  <button class="sum" [class.on]="filter === 'unpaid'" (click)="filter = 'unpaid'">
+    <span class="k">Waiting to be paid</span>
+    <span class="v">{{ sum(unpaid) | money }}</span>
+    <span class="s">{{ unpaid.length }} invoice{{ unpaid.length === 1 ? '' : 's' }}</span>
+  </button>
+  <button class="sum warn" [class.on]="filter === 'overdue'" (click)="filter = 'overdue'">
+    <span class="k">Overdue</span>
+    <span class="v">{{ sum(overdue) | money }}</span>
+    <span class="s">{{ overdue.length ? 'Send a reminder' : 'Nothing overdue' }}</span>
+  </button>
+  <button class="sum good" [class.on]="filter === 'paid'" (click)="filter = 'paid'">
+    <span class="k">Paid, issued this month</span>
+    <span class="v">{{ sum(paidThisMonth) | money }}</span>
+    <span class="s">{{ paidThisMonth.length }} invoice{{ paidThisMonth.length === 1 ? '' : 's' }}</span>
+  </button>
+</div>
+
+<div class="toolbar">
+  <div class="seg" [appSegMarker]="filter">
+    <span class="marker"></span>
+    @for (f of filters; track f.key) {
+      <button [class.on]="filter === f.key" (click)="filter = f.key">{{ f.label }} <span class="n">{{ count(f.key) }}</span></button>
+    }
+  </div>
+  <div class="input-group search">
+    <app-icon name="search" [size]="16" />
+    <input class="input" [(ngModel)]="query" placeholder="Search name or number" aria-label="Search invoices">
+  </div>
+</div>
+
+<section class="panel">
+  @if (loading) {
+    <div class="skeletons">@for (i of [1, 2, 3, 4]; track i) { <div class="skeleton" style="height: 48px"></div> }</div>
+  } @else if (error) {
+    <app-empty-state icon="alert" title="Couldn't load invoices" [text]="error"><button class="btn" (click)="load()">Try again</button></app-empty-state>
+  } @else if (!visible.length) {
+    <app-empty-state icon="receipt" [title]="invoices.length ? 'No invoices here' : 'No invoices yet'"
+      [text]="invoices.length ? 'Try another filter or search.' : 'Open a finished appointment and choose Create invoice, or start one here.'">
+      @if (!invoices.length) { <button class="btn btn-primary" (click)="ui.openInvoiceForm()">New invoice</button> }
+    </app-empty-state>
+  } @else {
+    <div class="table-wrap">
+      <table class="table">
+        <thead><tr><th>Number</th><th>{{ 'client' | term }}</th><th class="hide-sm">Issued</th><th class="hide-sm">Due</th><th>Status</th><th class="num">Total</th></tr></thead>
+        <tbody [@listStagger]="filter + visible.length">
+          @for (i of visible; track i.id) {
+            <tr class="clickable" (click)="ui.showInvoice(i.id)" tabindex="0" (keydown.enter)="ui.showInvoice(i.id)">
+              <td><strong class="no">{{ i.number }}</strong></td>
+              <td><div class="row"><app-avatar [name]="i.clientName" [size]="28" />{{ i.clientName }}</div></td>
+              <td class="hide-sm muted">{{ date(i.issueDate) }}</td>
+              <td class="hide-sm" [class.late]="i.overdue" [class.muted]="!i.overdue">{{ date(i.dueDate) }}</td>
+              <td><app-status-pill [status]="i.status" [overdue]="i.overdue" /></td>
+              <td class="num"><strong>{{ i.total | money }}</strong></td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</section>

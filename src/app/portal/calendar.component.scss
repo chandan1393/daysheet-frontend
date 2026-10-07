@@ -1,0 +1,74 @@
+.toolbar { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-bottom: 16px; }
+.nav-group { display: flex; gap: 6px; }
+.range { font-size: 22px; font-weight: 700; }
+
+.cal { overflow: hidden; }
+.scroller { max-height: calc(100vh - 210px); min-height: 420px; overflow-y: auto; overscroll-behavior: contain; }
+
+.head {
+  position: sticky; top: 0; z-index: 5; display: grid; background: var(--surface); border-bottom: 1px solid var(--line);
+}
+.day-head {
+  position: relative; display: flex; flex-direction: column; align-items: center; gap: 0; padding: 10px 0 8px;
+  border: 0; border-left: 1px solid var(--line); background: none; cursor: pointer; transition: background-color .2s;
+  &:hover:not(:disabled) { background: #F6F8FB; }
+  &:disabled { cursor: default; }
+  .dname { font-size: 12px; color: var(--muted); font-weight: 600; }
+  .dnum { font-family: var(--font-display); font-size: 22px; font-weight: 700; color: var(--ink); width: 38px; height: 38px; display: grid; place-items: center; border-radius: 12px; }
+  .dcount { position: absolute; top: 8px; right: 8px; font-size: 11px; font-weight: 700; color: var(--lagoon-deep); background: var(--lagoon-wash); border-radius: 99px; padding: 0 6px; }
+  &.today .dnum { background: var(--marigold); color: var(--ink); }
+  &.today .dname { color: var(--marigold-deep); }
+}
+
+.body { position: relative; display: grid; }
+.gutter {
+  position: relative;
+  span { position: absolute; right: 10px; transform: translateY(-50%); font-size: 11.5px; color: var(--faint); font-weight: 500; white-space: nowrap; }
+  span:first-child { transform: translateY(2px); }
+}
+.col {
+  position: relative; border-left: 1px solid var(--line); cursor: copy;
+  background-image:
+    linear-gradient(to bottom, var(--line) 1px, transparent 1px),
+    linear-gradient(to bottom, transparent calc(var(--hh) / 2), #F0F3F7 calc(var(--hh) / 2), #F0F3F7 calc(var(--hh) / 2 + 1px), transparent calc(var(--hh) / 2 + 1px));
+  background-size: 100% var(--hh);
+  &.closed { background-color: #F6F7FA; }
+  &.today { background-color: color-mix(in srgb, var(--marigold) 4%, transparent); }
+}
+
+.ghost {
+  position: absolute; left: 3px; right: 3px; border-radius: 9px; border: 1.5px dashed var(--lagoon);
+  background: color-mix(in srgb, var(--lagoon) 8%, transparent); color: var(--lagoon-deep);
+  font-size: 12px; font-weight: 600; display: flex; align-items: center; gap: 4px; padding: 0 8px; pointer-events: none;
+}
+
+.blk {
+  --c: var(--lagoon);
+  position: absolute; z-index: 2; text-align: left; overflow: hidden; cursor: pointer;
+  display: flex; flex-direction: column; gap: 0; padding: 5px 8px 5px 10px; border: 0; border-radius: 10px;
+  background: color-mix(in srgb, var(--c) 13%, #fff); border-left: 4px solid var(--c);
+  box-shadow: 0 1px 0 rgba(16, 33, 58, .04);
+  animation: pop .38s var(--ease-spring) both;
+  transition: transform .18s var(--ease-out), box-shadow .2s;
+  &:hover { transform: translateY(-1px) scale(1.015); box-shadow: var(--shadow-2); z-index: 3; }
+  .t { display: flex; align-items: center; gap: 4px; flex-shrink: 0; white-space: nowrap; font-size: 11.5px; font-weight: 600; color: color-mix(in srgb, var(--c) 75%, var(--ink)); font-variant-numeric: tabular-nums; }
+  strong { font-size: 13px; color: var(--ink); line-height: 1.25; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .s { font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  &.short { flex-direction: row; align-items: center; gap: 6px; padding-top: 0; padding-bottom: 0; .s { display: none; } strong { min-width: 0; } }
+  &.done { background: color-mix(in srgb, var(--c) 7%, #fff); }
+  &.cancelled { opacity: .55; background: repeating-linear-gradient(-45deg, #F3F5F9 0 6px, #fff 6px 12px); strong { text-decoration: line-through; } }
+  &.noshow { border-left-color: var(--rose); background: var(--rose-wash); }
+}
+@keyframes pop { from { opacity: 0; transform: scale(.92); } to { opacity: 1; transform: none; } }
+
+.now {
+  position: absolute; left: 0; right: 0; height: 2px; background: var(--marigold); z-index: 4; pointer-events: none;
+  i { position: absolute; left: -6px; top: -5px; width: 12px; height: 12px; border-radius: 50%; background: var(--marigold); box-shadow: 0 0 0 4px rgba(245, 166, 35, .25); }
+}
+
+.tip { font-size: 13px; margin-top: 12px; }
+
+@media (max-width: 760px) {
+  .range { font-size: 18px; width: 100%; order: 3; }
+  .gutter span { font-size: 10.5px; right: 6px; }
+}

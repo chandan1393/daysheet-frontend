@@ -1,0 +1,30 @@
+.verify { text-align: left; }
+.env {
+  display: inline-grid; place-items: center; width: 56px; height: 56px; border-radius: 18px; margin-bottom: 18px;
+  background: var(--lagoon-wash); color: var(--lagoon-deep); animation: bob 2.4s ease-in-out infinite;
+  &.err-env { background: var(--rose-wash); color: #B22A58; animation: none; }
+}
+@keyframes bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
+.sub strong { color: var(--ink); }
+.code { display: flex; align-items: center; gap: 8px; margin: 26px 0 16px; }
+.code.shake { animation: shake .45s; }
+@keyframes shake { 20%, 60% { transform: translateX(-8px); } 40%, 80% { transform: translateX(8px); } }
+.digit {
+  width: 52px; height: 62px; border-radius: 14px; border: 2px solid var(--line-strong); background: var(--surface);
+  text-align: center; font-family: var(--font-display); font-size: 28px; font-weight: 800; color: var(--ink);
+  transition: border-color .15s, box-shadow .15s, transform .2s var(--ease-spring);
+  &:focus { outline: none; border-color: var(--lagoon); box-shadow: 0 0 0 4px rgba(14, 124, 134, .15); transform: translateY(-2px); }
+  &.filled { border-color: var(--ink-3); }
+}
+.dash { width: 12px; height: 3px; border-radius: 2px; background: var(--line-strong); }
+@media (max-width: 420px) { .digit { width: 42px; height: 54px; font-size: 24px; } .code { gap: 6px; } }
+.link { border: 0; background: none; padding: 0; color: var(--lagoon); font-weight: 600; cursor: pointer; font-size: inherit; &:hover { text-decoration: underline; } }
+.muted-link { color: var(--muted); font-weight: 500; }
+.center { display: flex; flex-direction: column; align-items: center; gap: 16px; padding: 40px 0; }
+.spinner.big { width: 36px; height: 36px; border-width: 3.5px; color: var(--lagoon); }
+.done { display: flex; flex-direction: column; align-items: flex-start; }
+.tick { width: 64px; height: 64px; margin-bottom: 18px;
+  circle { fill: var(--sage-wash); stroke: var(--sage); stroke-width: 2; stroke-dasharray: 152; stroke-dashoffset: 152; animation: draw .6s ease-out forwards; }
+  path { fill: none; stroke: var(--sage); stroke-width: 4; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 40; stroke-dashoffset: 40; animation: draw .4s .45s ease-out forwards; }
+}
+@keyframes draw { to { stroke-dashoffset: 0; } }

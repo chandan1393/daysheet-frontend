@@ -1,0 +1,96 @@
+<form (ngSubmit)="save()" autocomplete="off">
+  <div class="field client-field">
+    <label for="client">{{ 'client' | term }}</label>
+    <div class="input-group">
+      <app-icon name="user" [size]="16" />
+      <input id="client" class="input" name="client" [(ngModel)]="clientQuery" (input)="onClientInput()"
+             (focus)="showSuggestions = true" (blur)="hideSuggestionsSoon()"
+             [placeholder]="'Search ' + ('clients' | term: true) + ' or type a new name'">
+      @if (clientId) {
+        <span class="picked"><app-icon name="check" [size]="14" [stroke]="3" /></span>
+      }
+    </div>
+
+    @if (showSuggestions && !clientId) {
+      <ul class="suggestions">
+        @for (c of suggestions; track c.id) {
+          <li><button type="button" (mousedown)="chooseClient(c)">
+            <app-avatar [name]="c.fullName" [size]="28" />
+            <span class="s-name">{{ c.fullName }}</span>
+            <span class="s-meta">{{ c.phone || c.email }}</span>
+          </button></li>
+        }
+        @if (clientQuery.trim() && !exactMatch) {
+          <li><button type="button" class="add" (mousedown)="startNewClient()">
+            <span class="plus"><app-icon name="plus" [size]="14" [stroke]="2.6" /></span>
+            Add “{{ clientQuery.trim() }}” as a new {{ 'client' | term: true }}
+          </button></li>
+        }
+      </ul>
+    }
+  </div>
+
+  @if (newClient) {
+    <div class="new-client">
+      <p>New {{ 'client' | term: true }}: <strong>{{ clientQuery }}</strong></p>
+      <div class="field-row">
+        <div class="field"><label for="nphone">Phone</label><input id="nphone" class="input" name="nphone" [(ngModel)]="newPhone" placeholder="+91 98765 43210"></div>
+        <div class="field"><label for="nemail">Email</label><input id="nemail" class="input" type="email" name="nemail" [(ngModel)]="newEmail" placeholder="Optional"></div>
+      </div>
+    </div>
+  }
+
+  <div class="field">
+    <span class="label">Service</span>
+    <div class="services">
+      @for (s of services; track s.id) {
+        <button type="button" class="svc" [class.on]="serviceId === s.id" [style.--c]="s.color" (click)="pickService(s)">
+          <i></i>
+          <span class="svc-name">{{ s.name }}</span>
+          <span class="svc-meta">{{ s.durationMinutes | duration }}</span>
+        </button>
+      }
+      <button type="button" class="svc other" [class.on]="serviceId === null" (click)="pickService(null)">
+        <i></i><span class="svc-name">Other</span><span class="svc-meta">Set below</span>
+      </button>
+    </div>
+  </div>
+
+  <div class="when">
+    <div class="field"><label for="date">Date</label><input id="date" class="input" type="date" name="date" [(ngModel)]="date" required></div>
+    <div class="field"><label for="time">Start</label><input id="time" class="input" type="time" step="300" name="time" [(ngModel)]="time" required></div>
+    <div class="field">
+      <label for="duration">Length</label>
+      <select id="duration" class="select" name="duration" [(ngModel)]="duration">
+        @for (d of durationOptions; track d) { <option [ngValue]="d">{{ d | duration }}</option> }
+      </select>
+    </div>
+    <div class="field">
+      <label for="price">Price</label>
+      <input id="price" class="input" type="number" min="0" step="any" name="price" [(ngModel)]="price" placeholder="0">
+    </div>
+  </div>
+  @if (endLabel) { <p class="ends">Ends at {{ endLabel }}</p> }
+
+  <div class="field">
+    <label for="notes">Note for this {{ 'session' | term: true }}</label>
+    <textarea id="notes" class="textarea" name="notes" rows="2" [(ngModel)]="notes" placeholder="Anything to remember before they arrive"></textarea>
+  </div>
+
+  @if (conflict) {
+    <div class="conflict">
+      <app-icon name="alert" [size]="18" />
+      <span>{{ conflict }}</span>
+      <button type="button" class="btn btn-sm" (click)="save(true)" [disabled]="saving">Book anyway</button>
+    </div>
+  }
+  @if (error) { <p class="form-error">{{ error }}</p> }
+
+  <div class="actions">
+    <button type="button" class="btn" (click)="cancelled.emit()">Cancel</button>
+    <button type="submit" class="btn btn-primary" [disabled]="saving" appRipple>
+      @if (saving) { <span class="spinner"></span> }
+      {{ appointment ? 'Save changes' : 'Book ' + ('session' | term: true) }}
+    </button>
+  </div>
+</form>

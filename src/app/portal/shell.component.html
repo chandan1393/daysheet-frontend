@@ -1,0 +1,120 @@
+<div class="scrim" [class.show]="menuOpen" (click)="menuOpen = false"></div>
+
+<aside class="sidebar" [class.open]="menuOpen">
+  <a class="brand" routerLink="/app">
+    <span class="mark" aria-hidden="true"><i></i><i></i><i></i></span>
+    <span class="names">
+      <strong>{{ auth.workspace?.name }}</strong>
+      <span>{{ appName }}</span>
+    </span>
+  </a>
+
+  <nav aria-label="Main">
+    @for (item of nav; track item.path) {
+      <a [routerLink]="item.path" routerLinkActive="on" [routerLinkActiveOptions]="{ exact: item.exact }">
+        <app-icon [name]="item.icon" [size]="19" />
+        <span>{{ label(item.page) }}</span>
+      </a>
+    }
+  </nav>
+
+  <div class="side-bottom">
+    <button class="link-card" (click)="copyLink()" appRipple>
+      <app-icon name="link" [size]="17" />
+      <span>
+        <strong>Your booking link</strong>
+        <span class="url">/book/{{ auth.workspace?.slug }}</span>
+      </span>
+      <app-icon name="copy" [size]="15" />
+    </button>
+
+    @if (auth.workspace?.expired) {
+      <a class="trial ended" routerLink="/app/settings" [queryParams]="{ tab: 'plan' }">
+        <span class="row"><strong>Plan ended</strong><span class="spacer"></span><span>Renew</span></span>
+      </a>
+    } @else if (auth.workspace?.plan === 'TRIAL') {
+      <a class="trial" routerLink="/app/settings" [queryParams]="{ tab: 'plan' }">
+        <span class="row"><strong>{{ auth.workspace?.daysLeft }} days left</strong><span class="spacer"></span><span>Free trial</span></span>
+        <span class="bar"><i [style.width.%]="trialPercent"></i></span>
+      </a>
+    } @else if ((auth.workspace?.daysLeft ?? 99) <= 7) {
+      <a class="trial" routerLink="/app/settings" [queryParams]="{ tab: 'plan' }">
+        <span class="row"><strong>{{ auth.workspace?.daysLeft }} days left</strong><span class="spacer"></span><span>Renew</span></span>
+      </a>
+    }
+
+    <div class="me">
+      <app-avatar [name]="auth.user?.fullName ?? ''" [size]="34" />
+      <span class="who">
+        <strong>{{ auth.user?.fullName }}</strong>
+        <span>{{ auth.workspace?.professionName }}</span>
+      </span>
+      <button class="btn btn-ghost btn-icon btn-sm out" (click)="logout()" aria-label="Log out" title="Log out">
+        <app-icon name="logout" [size]="17" />
+      </button>
+    </div>
+  </div>
+</aside>
+
+<div class="main">
+  <header class="topbar">
+    <button class="btn btn-ghost btn-icon menu-btn" (click)="menuOpen = true" aria-label="Open menu"><app-icon name="menu" /></button>
+    <h1 class="title">{{ label(page) }}</h1>
+    <form class="search input-group" (ngSubmit)="runSearch()">
+      <app-icon name="search" [size]="16" />
+      <input class="input" name="q" [(ngModel)]="search" [placeholder]="'Find a ' + ('client' | term: true)" autocomplete="off">
+    </form>
+    <button class="btn btn-primary new-btn" (click)="ui.newAppointment()" appRipple>
+      <app-icon name="plus" [size]="17" [stroke]="2.5" /><span>New {{ 'session' | term: true }}</span>
+    </button>
+  </header>
+
+  @if (auth.workspace?.expired) {
+    <div class="ended-banner">
+      <app-icon name="alert" [size]="17" />
+      <span>Your plan has ended. Your records are safe and readable; choose a plan to take bookings and make changes again.</span>
+      <a class="btn btn-sm" routerLink="/app/settings" [queryParams]="{ tab: 'plan' }">Choose a plan</a>
+    </div>
+  }
+  <main class="content" [@routeAnim]="routeKey(outlet)">
+    <router-outlet #outlet="outlet" />
+  </main>
+</div>
+
+<app-modal [open]="formOpen" [title]="(editing ? 'Edit ' : 'New ') + ('session' | term: true)" width="600px" (closed)="formOpen = false">
+  @if (formOpen) {
+    <app-appointment-form [appointment]="editing" [prefill]="prefill" (saved)="onAppointmentSaved()" (cancelled)="formOpen = false" />
+  }
+</app-modal>
+
+<app-modal [open]="!!detail" width="640px" (closed)="detail = null">
+  @if (detail) {
+    <app-appointment-details [appointment]="detail" (changed)="onDetailChanged($event)" (closed)="detail = null" />
+  }
+</app-modal>
+
+<app-modal [open]="invoiceId !== null" width="780px" (closed)="invoiceId = null">
+  @if (invoiceId !== null) {
+    <app-invoice-view [invoiceId]="invoiceId" (changed)="ui.notifyChanged()" (edit)="ui.openInvoiceForm({ invoice: $event })" />
+  }
+</app-modal>
+
+<app-drawer [open]="invoiceFormOpen" [title]="invoiceToEdit ? 'Edit ' + invoiceToEdit.number : 'New invoice'" (closed)="invoiceFormOpen = false">
+  @if (invoiceFormOpen) {
+    <app-invoice-form [invoice]="invoiceToEdit" [clientId]="invoiceClientId" (saved)="onInvoiceSaved($event)" (cancelled)="invoiceFormOpen = false" />
+  }
+</app-drawer>
+
+<app-modal [open]="!!document" [title]="''" width="920px" (closed)="document = null">
+  @if (document) {
+    <app-document-viewer [doc]="document" (deleted)="onDocumentDeleted()" />
+  }
+</app-modal>
+
+<app-modal [open]="!!rxRequest" [title]="rxRequest?.prescription ? 'Edit prescription' : 'Prescription for ' + (rxRequest?.clientName ?? '')" width="860px" (closed)="rxRequest = null">
+  @if (rxRequest) { <app-prescription-editor [request]="rxRequest" (saved)="onPrescriptionSaved($event)" (cancelled)="rxRequest = null" /> }
+</app-modal>
+
+<app-modal [open]="!!rxView" title="Prescription" width="820px" (closed)="rxView = null">
+  @if (rxView) { <app-prescription-view [prescription]="rxView" (edit)="editPrescription($event)" (deleted)="rxView = null; ui.notifyChanged()" /> }
+</app-modal>

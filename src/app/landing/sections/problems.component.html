@@ -1,0 +1,33 @@
+<section class="problems" id="problems">
+  <div class="lp-head" appReveal>
+    <h2>Sound familiar?</h2>
+    <p>Four things that quietly eat into every practice's day. Tap a card to see how Daysheet handles it.</p>
+    <div class="seg" [appSegMarker]="allFixed">
+      <span class="marker"></span>
+      <button [class.on]="!allFixed" (click)="setAll(false)">Without Daysheet</button>
+      <button [class.on]="allFixed" (click)="setAll(true)">With Daysheet</button>
+    </div>
+  </div>
+
+  <div class="cards">
+    @for (item of items; track item.problem; let i = $index) {
+      <button class="card" [class.flipped]="flipped[i]" (click)="toggle(i)" [attr.aria-pressed]="flipped[i]"
+              appReveal [revealDelay]="i * 90">
+        <span class="inner" [style.transition-delay.ms]="delay(i)">
+          <span class="face front">
+            <span class="ic"><app-icon [name]="item.icon" [size]="20" /></span>
+            <strong>{{ item.problem }}</strong>
+            <span class="txt">{{ item.problemText }}</span>
+            <span class="hint">See the fix <app-icon name="chevron-right" [size]="14" [stroke]="2.6" /></span>
+          </span>
+          <span class="face back">
+            <span class="ic"><app-icon name="check" [size]="20" [stroke]="2.8" /></span>
+            <strong>{{ item.fix }}</strong>
+            <span class="txt">{{ item.fixText }}</span>
+            <span class="hint">Flip back</span>
+          </span>
+        </span>
+      </button>
+    }
+  </div>
+</section>

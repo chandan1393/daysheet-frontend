@@ -1,0 +1,159 @@
+<header class="top">
+  <a class="brand" routerLink="/"><span class="mark" aria-hidden="true"><i></i><i></i><i></i></span>{{ appName }}</a>
+  <nav>
+    <a routerLink="/contact" routerLinkActive="on">Contact</a>
+    <a routerLink="/privacy" routerLinkActive="on">Privacy</a>
+    <a routerLink="/terms" routerLinkActive="on">Terms</a>
+    <a routerLink="/refunds" routerLinkActive="on">Refunds</a>
+  </nav>
+</header>
+
+<main class="doc">
+  <h1>{{ titles[page] }}</h1>
+  @if (page !== 'contact') { <p class="updated">Last updated {{ legal.lastUpdated }}</p> }
+
+  @switch (page) {
+    @case ('contact') {
+      <p class="lead">We're a small team and we read every message. Expect a reply within one working day.</p>
+      <div class="cards">
+        <div class="card"><app-icon name="mail" [size]="18" /><div><strong>Email</strong><a [href]="'mailto:' + email">{{ email }}</a></div></div>
+        @if (biz.phone) {
+          <div class="card"><app-icon name="phone" [size]="18" /><div><strong>Phone and WhatsApp</strong><a [href]="tel">{{ biz.phone }}</a></div></div>
+        }
+        <div class="card"><app-icon name="clock" [size]="18" /><div><strong>Support hours</strong><span>Monday to Saturday, 10 am to 6 pm IST</span></div></div>
+      </div>
+      <h2>Business details</h2>
+      <p><strong>{{ biz.name }}</strong><br>{{ biz.address }}</p>
+      @if (biz.gstin) { <p>GSTIN: {{ biz.gstin }}</p> }
+      <p>{{ appName }} is operated by {{ biz.name }}.</p>
+    }
+
+    @case ('privacy') {
+      <p class="lead">This policy explains what {{ appName }} collects, why, and the choices you have. {{ appName }} is operated by {{ biz.name }} ("we", "us").</p>
+
+      <h2>1. What we collect</h2>
+      <ul>
+        <li><strong>Your account:</strong> name, email address, practice details and a securely hashed password. We never store your password in readable form.</li>
+        <li><strong>Records you add:</strong> details of the people you serve, appointments, notes, uploaded documents and invoices.</li>
+        <li><strong>Payments:</strong> handled by Razorpay. We receive the payment reference, amount and status, never your card, UPI PIN or bank login.</li>
+        <li><strong>Technical data:</strong> IP address, browser type and request logs, used to keep the service secure and to stop abuse.</li>
+      </ul>
+
+      <h2>2. How we use it</h2>
+      <p>To run {{ appName }} for you, keep it secure, process subscription payments, send service emails such as password resets and receipts, and answer support requests. We do not sell your data and we do not show advertising.</p>
+
+      <h2>3. The records about your clients</h2>
+      <p>You decide what you record about the people you serve. For that information you are responsible for having a lawful reason to record it and for telling your clients how you use it. We process it only to provide the service to you and never use it for any other purpose.</p>
+
+      <h2>4. Who we share data with</h2>
+      <p>Only the providers we need to run the service: our hosting provider, our email delivery provider and Razorpay for payments. Each is bound to protect the data. We also disclose information if Indian law requires it.</p>
+
+      <h2>5. How we protect it</h2>
+      <p>All traffic is encrypted with HTTPS. Passwords are hashed. Every practice's records are kept separate and can only be opened by people who log in to that practice. We take regular backups and limit staff access to what is needed to support you.</p>
+
+      <h2>6. How long we keep it</h2>
+      <p>We keep your data while your account exists. If you ask us to delete your account, we remove it from live systems within 30 days and from backups within a further 60 days, except records we must keep by law, such as payment and tax records.</p>
+
+      <h2>7. Your rights</h2>
+      <p>Under the Digital Personal Data Protection Act, 2023 you can ask to access, correct or erase your personal data, and to nominate someone to act for you. Email {{ email }} and we will respond within 30 days.</p>
+
+      <h2>8. Browser storage</h2>
+      <p>We keep your login session in your browser's local storage so you stay signed in. We do not use advertising or tracking cookies. Fonts are loaded from Google Fonts, which may receive your IP address.</p>
+
+      <h2>9. Age</h2>
+      <p>Accounts are for people aged 18 and over.</p>
+
+      <h2>10. Changes</h2>
+      <p>We will post any changes here and email you about significant ones.</p>
+
+      <h2>11. Grievance officer</h2>
+      <p>For any complaint about the service or your data, contact our grievance officer. We acknowledge complaints within 48 hours and resolve them within one month.</p>
+      <p>@if (biz.grievanceOfficer) { <strong>{{ biz.grievanceOfficer }}</strong>, }Grievance Officer, {{ biz.name }}<br>
+        {{ biz.address }}<br>
+        Email: <a [href]="'mailto:' + email">{{ email }}</a>@if (biz.phone) {, Phone: <a [href]="tel">{{ biz.phone }}</a>}</p>
+    }
+
+    @case ('terms') {
+      <p class="lead">These terms apply when you use {{ appName }}, operated by {{ biz.name }}. By creating an account you agree to them.</p>
+      <p class="legal-line">{{ biz.name }}@if (biz.gstin) {, GSTIN {{ biz.gstin }}}, {{ biz.address }}.</p>
+
+      <h2>1. The service</h2>
+      <p>{{ appName }} is online software for managing appointments, client records, documents and invoices.</p>
+
+      <h2>2. Your account</h2>
+      <p>You must be 18 or older and give accurate details. Keep your password private; you are responsible for activity on your account. Tell us straight away if you suspect someone else has access.</p>
+
+      <h2>3. Free trial</h2>
+      <p>New accounts get a 14-day free trial. No payment details are needed to start.</p>
+
+      <h2>4. Plans and payment</h2>
+      <ul>
+        <li>Prices are in Indian rupees, with GST as shown on our website and in the app. We issue a GST tax invoice for every payment.</li>
+        <li>You pay in advance for the period you choose, through Razorpay or by bank transfer.</li>
+        <li>Plans do not renew automatically. We remind you before your period ends.</li>
+        <li>If prices change, the new price applies only from your next payment.</li>
+      </ul>
+
+      <h2>5. When a plan ends</h2>
+      <p>If you don't renew, your account becomes read-only: you can still see your records, but bookings and changes pause. We keep your data for at least 90 days after a plan ends and email you before deleting anything.</p>
+
+      <h2>6. Your data</h2>
+      <p>You own the information you put into {{ appName }}. You give us permission to store and process it only to provide the service. You are responsible for collecting it lawfully, for any consent your profession requires, and for your own duties of confidentiality.</p>
+
+      <h2>7. Acceptable use</h2>
+      <p>Don't use {{ appName }} for anything unlawful, to send spam, to try to break or overload the service, or to access data that isn't yours. We may suspend accounts that do.</p>
+
+      <h2>8. Not professional advice</h2>
+      <p>{{ appName }} is a record-keeping tool. It does not give medical, legal, financial or any other professional advice.</p>
+
+      <h2>9. Availability</h2>
+      <p>We work to keep {{ appName }} available at all times but cannot promise it will never be interrupted, for example during maintenance.</p>
+
+      <h2>10. Liability</h2>
+      <p>To the extent the law allows, we are not liable for indirect or consequential losses, and our total liability is limited to the amount you paid us in the 12 months before the claim.</p>
+
+      <h2>11. Ending your account</h2>
+      <p>You can stop using {{ appName }} at any time and ask us to delete your account. We may end or suspend accounts that break these terms.</p>
+
+      <h2>12. Changes</h2>
+      <p>We may update these terms. We will post changes here and email you about significant ones.</p>
+
+      <h2>13. Law</h2>
+      <p>These terms are governed by the laws of India. Courts in {{ biz.jurisdictionCity || stateOf(biz.gstin) }} have jurisdiction.</p>
+
+      <h2>14. Contact</h2>
+      <p>{{ biz.name }}, {{ biz.address }}. Email: <a [href]="'mailto:' + email">{{ email }}</a></p>
+    }
+
+    @case ('refunds') {
+      <p class="lead">Simple rules: try it free, pay only for the period you choose, and ask for a refund within 7 days of your first payment if it isn't right for you.</p>
+
+      <h2>Free trial</h2>
+      <p>The 14-day trial is free and you are never charged automatically.</p>
+
+      <h2>Cancellation</h2>
+      <p>Plans don't renew automatically, so there is nothing to cancel. If you don't pay for another period, your access continues until the end of the period you paid for.</p>
+
+      <h2>Refunds</h2>
+      <ul>
+        <li>If you are not happy, email us within 7 days of your first payment and we will refund it in full.</li>
+        <li>After 7 days, payments are not refundable for the rest of the period, unless the law requires a refund or we could not provide the service because of a fault on our side.</li>
+        <li>Duplicate or failed payments that were charged are always refunded in full.</li>
+      </ul>
+
+      <h2>How refunds are paid</h2>
+      <p>Approved refunds go back to the original payment method through Razorpay within 5 to 7 working days. Your bank may take a few more days to show it.</p>
+
+      <h2>Delivery</h2>
+      <p>{{ appName }} is an online service; nothing is shipped. Your plan activates as soon as your payment is confirmed, usually within seconds, and you can use it straight away in your browser.</p>
+
+      <h2>Contact</h2>
+      <p>Email <a [href]="'mailto:' + email">{{ email }}</a> with your practice name and payment reference.</p>
+    }
+  }
+</main>
+
+<footer class="foot">
+  <span>© {{ year }} {{ biz.name }}</span>
+  <a routerLink="/">Home</a>
+</footer>

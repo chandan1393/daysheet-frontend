@@ -1,0 +1,108 @@
+@if (error) {
+  <p class="err">{{ error }}</p>
+} @else if (!record) {
+  <div class="skeleton" style="height: 120px; margin-top: 18px"></div>
+} @else {
+  <!-- What happened last time: the reason this feature exists -->
+  @if (record.previous; as prev) {
+    <section class="previous" [class.collapsed]="!showPrevious">
+      <button type="button" class="prev-head" (click)="showPrevious = !showPrevious" [attr.aria-expanded]="showPrevious">
+        <span class="prev-ic"><app-icon name="history" [size]="16" /></span>
+        <span class="prev-title">
+          <strong>Last visit</strong>
+          <span>{{ date(prev.appointment.startAt) }}, {{ prev.appointment.serviceName }}</span>
+        </span>
+        <app-icon class="chev" name="chevron-down" [size]="16" />
+      </button>
+      @if (showPrevious) {
+        <div class="prev-body" @fadeSlide>
+          @if (!prev.notes.length && !prev.documents.length) {
+            <p class="none">Nothing was written down at that visit.</p>
+          }
+          @for (n of prev.notes; track n.id) { <p class="prev-note">{{ n.body }}</p> }
+          @for (rx of prev.prescriptions; track rx.id) {
+            <button type="button" class="rx-chip" (click)="ui.showPrescription(rx)">
+              <app-icon name="pill" [size]="15" /><span><strong>Prescription</strong>{{ medicinesOf(rx) }}</span>
+            </button>
+          }
+          @if (prev.documents.length) {
+            <div class="docs">@for (d of prev.documents; track d.id) { <app-doc-chip [doc]="d" /> }</div>
+          }
+        </div>
+      }
+    </section>
+  } @else {
+    <p class="first"><app-icon name="sparkle" [size]="15" />First visit for {{ appointment.clientName.split(' ')[0] }}. Anything you record now will show here next time.</p>
+  }
+
+  <!-- This visit -->
+  <section class="current">
+    <div class="cur-head">
+      <h3>This visit</h3>
+      <span class="badge">{{ ordinal }} visit</span>
+    </div>
+
+    @if (rxEnabled) {
+      <div class="rx-block">
+        @for (rx of record.prescriptions; track rx.id) {
+          <button type="button" class="rx-chip current" (click)="ui.showPrescription(rx)" @fadeSlide>
+            <app-icon name="pill" [size]="15" /><span><strong>Prescription, {{ rx.items.length }} medicine{{ rx.items.length === 1 ? '' : 's' }}</strong>{{ medicinesOf(rx) }}</span>
+            <app-icon name="chevron-right" [size]="15" />
+          </button>
+        }
+        <div class="rx-actions">
+          <button type="button" class="btn btn-sm btn-primary" (click)="writeRx()" appRipple><app-icon name="pill" [size]="15" />{{ record.prescriptions.length ? 'Another prescription' : 'Write prescription' }}</button>
+          @if (record.previous?.prescriptions?.length && !record.prescriptions.length) {
+            <button type="button" class="btn btn-sm" (click)="writeRx(record.previous!.prescriptions[0])"><app-icon name="repeat" [size]="15" />Repeat last prescription</button>
+          }
+        </div>
+      </div>
+    }
+
+    @if (record.notes.length) {
+      <ul class="notes">
+        @for (n of record.notes; track n.id) {
+          <li @fadeSlide>
+            <p>{{ n.body }}</p>
+            <span class="note-meta">{{ noteTime(n) }}@if (n.authorName) { by {{ n.authorName }} }
+              <button type="button" class="link-del" (click)="deleteNote(n)">Delete</button>
+            </span>
+          </li>
+        }
+      </ul>
+    }
+
+    <div class="composer">
+      <textarea class="textarea" rows="3" [(ngModel)]="draft" (keydown)="onKey($event)"
+                placeholder="What did you find, advise or prescribe? Anything to check next time?" aria-label="Note for this visit"></textarea>
+      <div class="composer-bar">
+        <app-file-drop [compact]="true" label="Attach" (files)="upload($event)" />
+        <span class="spacer"></span>
+        <button type="button" class="btn btn-ink btn-sm" (click)="saveNote()" [disabled]="!draft.trim() || saving" appRipple>Save note</button>
+      </div>
+    </div>
+
+    @if (record.documents.length || pending.length) {
+      <div class="docs">
+        @for (d of record.documents; track d.id) { <app-doc-chip [doc]="d" @fadeSlide /> }
+        @for (p of pending; track p.key) {
+          <span class="uploading"><span class="spinner"></span>{{ p.name }}</span>
+        }
+      </div>
+    } @else {
+      <p class="hint">{{ hint }} can be attached here. On a phone, Attach opens the camera.</p>
+    }
+  </section>
+
+  <!-- Next visit in one tap -->
+  <section class="follow">
+    <span class="f-label"><app-icon name="repeat" [size]="15" />Book follow-up</span>
+    <div class="f-opts">
+      @for (f of followUps; track f.days) {
+        <button type="button" class="f-btn" (click)="bookFollowUp(f.days)">
+          <strong>{{ f.label }}</strong><span>{{ followUpDate(f.days) }}</span>
+        </button>
+      }
+    </div>
+  </section>
+}

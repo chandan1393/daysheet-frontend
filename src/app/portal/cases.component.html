@@ -1,0 +1,153 @@
+<div class="page-head">
+  <div><h1>Cases</h1><p>Every matter with its hearing dates. You get an email the evening before each hearing.</p></div>
+  <button class="btn btn-primary" (click)="startNew()" appRipple><app-icon name="plus" [size]="17" [stroke]="2.5" />New case</button>
+</div>
+
+@if (upcoming.length) {
+  <div class="upcoming" [@listStagger]="upcoming.length">
+    @for (u of upcoming; track u.c.id) {
+      <button class="hcard" [class.soon]="daysUntil(u.date) <= 1" (click)="view(u.c.id)">
+        <span class="cal"><small>{{ monthShort(u.date) }}</small><b>{{ dayNum(u.date) }}</b><small>{{ weekday(u.date) }}</small></span>
+        <span class="info">
+          <span class="when">{{ whenLabel(u.date) }}</span>
+          <strong>{{ u.c.title }}</strong>
+          <span class="muted">{{ u.c.court || 'Court not set' }}, {{ u.c.clientName }}</span>
+        </span>
+      </button>
+    }
+  </div>
+}
+
+<div class="toolbar">
+  <div class="input-group search">
+    <app-icon name="search" [size]="16" />
+    <input class="input" [(ngModel)]="q" (input)="onSearch()" placeholder="Search title, case number, court or client" aria-label="Search cases">
+  </div>
+  <div class="seg" [appSegMarker]="status">
+    <span class="marker"></span>
+    <button [class.on]="status === 'OPEN'" (click)="setStatus('OPEN')">Open</button>
+    <button [class.on]="status === 'CLOSED'" (click)="setStatus('CLOSED')">Closed</button>
+    <button [class.on]="status === 'ALL'" (click)="setStatus('ALL')">All</button>
+  </div>
+</div>
+
+<section class="panel">
+  @if (loading) {
+    <div class="pad">@for (i of [1, 2, 3]; track i) { <div class="skeleton" style="height: 50px; margin-bottom: 8px"></div> }</div>
+  } @else if (error) {
+    <app-empty-state icon="alert" title="Couldn't load cases" [text]="error" />
+  } @else if (!cases.length) {
+    <app-empty-state icon="briefcase" [title]="q ? 'No case matches that search' : 'No cases yet'" text="Add a case with its court and first hearing date.">
+      @if (!q) { <button class="btn btn-primary" (click)="startNew()">New case</button> }
+    </app-empty-state>
+  } @else {
+    <div class="table-wrap">
+      <table class="table">
+        <thead><tr><th>Case</th><th class="hide-sm">{{ 'client' | term }}</th><th class="hide-sm">Court</th><th>Next hearing</th><th class="hide-sm">Status</th></tr></thead>
+        <tbody [@listStagger]="cases.length">
+          @for (c of cases; track c.id) {
+            <tr class="clickable" (click)="view(c.id)" tabindex="0" (keydown.enter)="view(c.id)">
+              <td><strong>{{ c.title }}</strong><span class="sub mono">{{ c.caseNumber }}</span></td>
+              <td class="hide-sm">{{ c.clientName }}</td>
+              <td class="hide-sm muted">{{ c.court || '—' }}</td>
+              <td>
+                @if (c.nextHearing) { <span class="next" [class.soon]="daysUntil(c.nextHearing) <= 3">{{ long(c.nextHearing) }}</span> }
+                @else { <span class="faint">Not set</span> }
+              </td>
+              <td class="hide-sm"><span class="st" [class.closed]="c.status === 'CLOSED'">{{ c.status === 'OPEN' ? 'Open' : 'Closed' }}</span></td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</section>
+
+<app-drawer [open]="drawer !== 'none'" [title]="drawer === 'form' ? (open ? 'Edit case' : 'New case') : (open?.title ?? 'Case')"
+            [subtitle]="drawer === 'view' && open ? (open.caseNumber ? open.caseNumber + ', ' : '') + open.clientName : ''" (closed)="closeDrawer()">
+  @if (drawer === 'form') {
+    <div class="field">
+      <label for="c-client">{{ 'client' | term }}</label>
+      <select id="c-client" class="select" [(ngModel)]="form.clientId">
+        <option [ngValue]="0" disabled>Choose…</option>
+        @for (c of clients; track c.id) { <option [ngValue]="c.id">{{ c.fullName }}</option> }
+      </select>
+    </div>
+    <div class="field"><label for="c-title">Title</label><input id="c-title" class="input" [(ngModel)]="form.title" maxlength="200" placeholder="Property dispute, Bandra flat"></div>
+    <div class="field-row">
+      <div class="field"><label for="c-no">Case number</label><input id="c-no" class="input" [(ngModel)]="form.caseNumber" maxlength="80" placeholder="CS/1423/2025"></div>
+      <div class="field"><label for="c-type">Type</label><input id="c-type" class="input" [(ngModel)]="form.caseType" maxlength="80" placeholder="Civil suit"></div>
+    </div>
+    <div class="field"><label for="c-court">Court</label><input id="c-court" class="input" [(ngModel)]="form.court" maxlength="160" placeholder="City Civil Court, Mumbai"></div>
+    <div class="field"><label for="c-opp">Opposite party</label><input id="c-opp" class="input" [(ngModel)]="form.oppositeParty" maxlength="160"></div>
+    @if (!open) {
+      <div class="field"><label for="c-first">First hearing date (optional)</label><input id="c-first" class="input" type="date" [(ngModel)]="form.firstHearing"></div>
+    } @else {
+      <div class="field">
+        <span class="label">Status</span>
+        <div class="seg" [appSegMarker]="form.status"><span class="marker"></span>
+          <button [class.on]="form.status === 'OPEN'" (click)="form.status = 'OPEN'">Open</button>
+          <button [class.on]="form.status === 'CLOSED'" (click)="form.status = 'CLOSED'">Closed</button>
+        </div>
+      </div>
+    }
+    <div class="field"><label for="c-notes">Notes</label><textarea id="c-notes" class="textarea" rows="3" [(ngModel)]="form.notes" maxlength="4000"></textarea></div>
+    <div class="actions">
+      <button class="btn" (click)="open ? drawer = 'view' : closeDrawer()">Cancel</button>
+      <button class="btn btn-primary" (click)="saveCase()" [disabled]="busy" appRipple>Save case</button>
+    </div>
+  } @else if (!open) {
+    <div class="skeleton" style="height: 300px"></div>
+  } @else {
+    <dl class="facts">
+      <div><dt>Court</dt><dd>{{ open.court || '—' }}</dd></div>
+      <div><dt>Opposite party</dt><dd>{{ open.oppositeParty || '—' }}</dd></div>
+      <div><dt>Type</dt><dd>{{ open.caseType || '—' }}</dd></div>
+      <div><dt>Status</dt><dd><span class="st" [class.closed]="open.status === 'CLOSED'">{{ open.status === 'OPEN' ? 'Open' : 'Closed' }}</span></dd></div>
+    </dl>
+    @if (open.notes) { <p class="notes">{{ open.notes }}</p> }
+    <div class="row-actions">
+      <a class="btn btn-sm" [routerLink]="['/app/clients', open.clientId]"><app-icon name="user" [size]="14" />{{ open.clientName }}</a>
+      <button class="btn btn-sm" (click)="startEdit()"><app-icon name="edit" [size]="14" />Edit case</button>
+    </div>
+
+    <h3 class="sec">Hearings</h3>
+    <div class="add-hearing">
+      <input class="input" type="date" [(ngModel)]="hearingForm.hearingDate" aria-label="Hearing date">
+      <input class="input" [(ngModel)]="hearingForm.purpose" maxlength="200" placeholder="Purpose, e.g. Arguments" aria-label="Purpose">
+      <button class="btn btn-primary btn-sm" (click)="addHearing()">Add</button>
+    </div>
+    @if (!open.hearings.length) { <p class="muted small">No hearings yet.</p> }
+    <ol class="timeline">
+      @for (h of open.hearings; track h.id) {
+        <li [class.past]="isPast(h)" @fadeSlide>
+          <span class="dot"></span>
+          <div class="h-head">
+            <strong>{{ long(h.hearingDate) }}</strong>
+            <span class="when-s">{{ whenLabel(h.hearingDate) }}</span>
+            <button class="btn btn-ghost btn-icon btn-sm del" (click)="deleteHearing(h)" aria-label="Delete hearing"><app-icon name="trash" [size]="13" /></button>
+          </div>
+          @if (h.purpose) { <p class="purpose">{{ h.purpose }}</p> }
+          @if (outcomeFor === h.id) {
+            <div class="outcome-form">
+              <textarea class="textarea" rows="2" [(ngModel)]="outcome.text" placeholder="What happened? e.g. Arguments heard, order reserved" maxlength="4000"></textarea>
+              <div class="next-row">
+                <input class="input" type="date" [(ngModel)]="outcome.nextDate" aria-label="Next hearing date">
+                <input class="input" [(ngModel)]="outcome.nextPurpose" placeholder="Next purpose" maxlength="200" aria-label="Next purpose">
+              </div>
+              <div class="actions small-actions">
+                <button class="btn btn-sm" (click)="outcomeFor = null">Cancel</button>
+                <button class="btn btn-sm btn-primary" (click)="saveOutcome(h)">Save</button>
+              </div>
+            </div>
+          } @else if (h.outcome) {
+            <p class="outcome" (click)="startOutcome(h)">{{ h.outcome }}</p>
+          } @else if (isPast(h)) {
+            <button class="btn btn-sm rec" (click)="startOutcome(h)"><app-icon name="edit" [size]="13" />Record outcome and next date</button>
+          }
+        </li>
+      }
+    </ol>
+    <button class="btn btn-ghost btn-sm btn-danger delete-case" (click)="deleteCase()"><app-icon name="trash" [size]="14" />Delete case</button>
+  }
+</app-drawer>

@@ -1,0 +1,64 @@
+<div class="field">
+  <label for="iclient">{{ 'client' | term }}</label>
+  <select id="iclient" class="select" [(ngModel)]="client" [disabled]="!!invoice">
+    <option [ngValue]="null" disabled>Choose a {{ 'client' | term: true }}</option>
+    @for (c of clients; track c.id) { <option [ngValue]="c.id">{{ c.fullName }}</option> }
+  </select>
+</div>
+
+<div class="field-row">
+  <div class="field"><label for="iissue">Issue date</label><input id="iissue" class="input" type="date" [(ngModel)]="issueDate"></div>
+  <div class="field"><label for="idue">Due date</label><input id="idue" class="input" type="date" [(ngModel)]="dueDate"></div>
+</div>
+
+<div class="lines-head">
+  <span class="label">Lines</span>
+  @if (services.length) {
+    <select class="select quick" (change)="addService($any($event.target).value); $any($event.target).value = ''" aria-label="Add a service">
+      <option value="">Add a service…</option>
+      @for (s of services; track s.id) { <option [value]="s.id">{{ s.name }} ({{ s.price | money }})</option> }
+    </select>
+  }
+</div>
+
+<div class="lines">
+  @for (l of lines; track l.key) {
+    <div class="line" @fadeSlide>
+      <input class="input desc" [(ngModel)]="l.description" placeholder="Description" aria-label="Description">
+      <input class="input qty" type="number" min="0" step="any" [(ngModel)]="l.quantity" aria-label="Quantity">
+      <input class="input price" type="number" min="0" step="any" [(ngModel)]="l.unitPrice" aria-label="Unit price">
+      <span class="total tabular">{{ lineTotal(l) | money: '' : 2 }}</span>
+      <button type="button" class="btn btn-ghost btn-icon btn-sm" (click)="removeLine(l)" aria-label="Remove line"><app-icon name="x" [size]="15" /></button>
+    </div>
+  }
+</div>
+<button type="button" class="btn btn-ghost btn-sm add" (click)="addLine()"><app-icon name="plus" [size]="15" />Add line</button>
+
+<div class="totals">
+  <div class="row"><span class="muted">Subtotal</span><span class="spacer"></span><span class="tabular">{{ subtotal | money: '' : 2 }}</span></div>
+  <div class="row tax">
+    <span class="muted">Tax</span>
+    <input class="input" type="number" min="0" max="100" step="any" [(ngModel)]="taxRate" aria-label="Tax rate percent"><span class="muted">%</span>
+    <span class="spacer"></span><span class="tabular">{{ tax | money: '' : 2 }}</span>
+  </div>
+  <div class="row grand"><strong>Total</strong><span class="spacer"></span><strong class="tabular">{{ total | money: '' : 2 }}</strong></div>
+</div>
+
+<div class="field">
+  <label for="inotes">Note on the invoice</label>
+  <textarea id="inotes" class="textarea" rows="2" [(ngModel)]="notes" placeholder="Payment details, e.g. UPI ID or bank transfer"></textarea>
+</div>
+
+@if (error) { <p class="err">{{ error }}</p> }
+
+<div class="actions">
+  <button type="button" class="btn" (click)="cancelled.emit()">Cancel</button>
+  <span class="spacer"></span>
+  @if (!invoice || invoice.status === 'DRAFT') {
+    <button type="button" class="btn" (click)="save('DRAFT')" [disabled]="saving">Save draft</button>
+  }
+  <button type="button" class="btn btn-primary" (click)="save('SENT')" [disabled]="saving" appRipple>
+    @if (saving) { <span class="spinner"></span> }
+    {{ invoice && invoice.status !== 'DRAFT' ? 'Save changes' : 'Save and send' }}
+  </button>
+</div>

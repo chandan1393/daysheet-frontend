@@ -1,0 +1,118 @@
+<div class="page-head">
+  <div><h1>Deadlines</h1><p>Filings and due dates for every client. Recurring ones add the next one when you mark them done.</p></div>
+  <div class="head-actions">
+    <button class="btn" (click)="openNew(true)"><app-icon name="users" [size]="16" />Add for many clients</button>
+    <button class="btn btn-primary" (click)="openNew(false)" appRipple><app-icon name="plus" [size]="17" [stroke]="2.5" />Add deadline</button>
+  </div>
+</div>
+
+<div class="summary">
+  <button class="sum warn" [class.on]="view === 'overdue'" (click)="view = 'overdue'"><span class="k">Overdue</span><span class="v">{{ count('overdue') }}</span></button>
+  <button class="sum" [class.on]="view === 'week'" (click)="view = 'week'"><span class="k">Due in 7 days</span><span class="v">{{ count('week') }}</span></button>
+  <button class="sum calm" [class.on]="view === 'upcoming'" (click)="view = 'upcoming'"><span class="k">Later</span><span class="v">{{ count('upcoming') }}</span></button>
+  <button class="sum good" [class.on]="view === 'done'" (click)="view = 'done'"><span class="k">Done</span><span class="v">{{ count('done') }}</span></button>
+</div>
+
+<div class="toolbar">
+  <div class="input-group search">
+    <app-icon name="search" [size]="16" />
+    <input class="input" [(ngModel)]="q" placeholder="Search task, client or period" aria-label="Search deadlines">
+  </div>
+</div>
+
+<section class="panel">
+  @if (loading) {
+    <div class="pad">@for (i of [1, 2, 3]; track i) { <div class="skeleton" style="height: 50px; margin-bottom: 8px"></div> }</div>
+  } @else if (error) {
+    <app-empty-state icon="alert" title="Couldn't load deadlines" [text]="error" />
+  } @else if (!visible.length) {
+    <app-empty-state icon="check" [title]="view === 'overdue' ? 'Nothing overdue' : view === 'done' ? 'Nothing done yet' : 'Nothing here'"
+      [text]="all.length ? 'Pick another filter above.' : 'Add GSTR-3B for all your GST clients in one go with Add for many clients.'">
+      @if (!all.length) { <button class="btn btn-primary" (click)="openNew(true)">Add for many clients</button> }
+    </app-empty-state>
+  } @else {
+    <ul class="dl" [@listStagger]="view + visible.length">
+      @for (d of visible; track d.id) {
+        <li [class.done]="d.status === 'DONE'" [class.late]="d.overdue">
+          <button class="check" (click)="toggleDone(d)" [attr.aria-label]="d.status === 'DONE' ? 'Mark as pending' : 'Mark as done'">
+            <app-icon name="check" [size]="14" [stroke]="3" />
+          </button>
+          <button class="main" (click)="edit(d)">
+            <span class="t"><strong>{{ d.title }}</strong>@if (d.period) { <span class="period">{{ d.period }}</span> }</span>
+            <span class="c">{{ d.clientName }}</span>
+          </button>
+          <span class="cat">{{ catLabel(d.category) }}</span>
+          @if (recurLabel(d.recurrence)) { <span class="rec" [title]="recurLabel(d.recurrence)"><app-icon name="repeat" [size]="13" /></span> }
+          <span class="due"><strong>{{ short(d.dueDate) }}</strong><small>{{ dueLabel(d) }}</small></span>
+        </li>
+      }
+    </ul>
+  }
+</section>
+
+<app-drawer [open]="drawerOpen" [title]="editing ? 'Edit deadline' : bulk ? 'Add for many clients' : 'Add deadline'"
+            [subtitle]="bulk ? 'Same task and due date for every client you tick.' : ''" (closed)="drawerOpen = false">
+  @if (!editing) {
+    <span class="label">Quick fill</span>
+    <div class="presets">
+      @for (p of presets; track p.title) { <button type="button" class="chip-btn" [class.on]="form.title === p.title" (click)="applyPreset(p)">{{ p.title }}</button> }
+    </div>
+    <p class="hint-line">Suggested due dates. Check the latest notifications, as dates are often extended.</p>
+  }
+
+  @if (!bulk) {
+    <div class="field">
+      <label for="d-client">{{ 'client' | term }}</label>
+      <select id="d-client" class="select" [(ngModel)]="form.clientId">
+        <option [ngValue]="0" disabled>Choose…</option>
+        @for (c of clients; track c.id) { <option [ngValue]="c.id">{{ c.fullName }}</option> }
+      </select>
+    </div>
+  }
+  <div class="field-row">
+    <div class="field"><label for="d-title">Task</label><input id="d-title" class="input" [(ngModel)]="form.title" maxlength="120" placeholder="GSTR-3B"></div>
+    <div class="field"><label for="d-period">Period</label><input id="d-period" class="input" [(ngModel)]="form.period" maxlength="40" placeholder="Sep 2026"></div>
+  </div>
+  <div class="field-row">
+    <div class="field"><label for="d-due">Due date</label><input id="d-due" class="input" type="date" [(ngModel)]="form.dueDate"></div>
+    <div class="field">
+      <label for="d-cat">Type</label>
+      <select id="d-cat" class="select" [(ngModel)]="form.category">
+        @for (c of categories; track c.key) { <option [value]="c.key">{{ c.label }}</option> }
+      </select>
+    </div>
+  </div>
+  <div class="field">
+    <label for="d-rec">Repeats</label>
+    <select id="d-rec" class="select" [(ngModel)]="form.recurrence">
+      <option value="NONE">Does not repeat</option><option value="MONTHLY">Every month</option>
+      <option value="QUARTERLY">Every quarter</option><option value="YEARLY">Every year</option>
+    </select>
+    <span class="hint">When you mark it done, the next one is added automatically.</span>
+  </div>
+
+  @if (bulk) {
+    <div class="field">
+      <span class="label">{{ 'clients' | term }} <span class="faint">({{ selected.size }} chosen)</span></span>
+      <div class="pick-bar">
+        <input class="input" [(ngModel)]="clientFilter" placeholder="Filter by name or tag, e.g. GST" aria-label="Filter clients">
+        <button type="button" class="btn btn-sm" (click)="selectAllShown()">Tick all shown</button>
+      </div>
+      <ul class="picker">
+        @for (c of filteredClients; track c.id) {
+          <li><label><input type="checkbox" [checked]="selected.has(c.id)" (change)="toggleClient(c.id)">
+            <span>{{ c.fullName }}</span>@if (c.tags) { <small>{{ c.tags }}</small> }</label></li>
+        }
+      </ul>
+    </div>
+  } @else {
+    <div class="field"><label for="d-notes">Notes</label><textarea id="d-notes" class="textarea" rows="2" [(ngModel)]="form.notes" maxlength="1000"></textarea></div>
+  }
+
+  <div class="actions">
+    @if (editing) { <button class="btn btn-danger" (click)="remove()">Delete</button> }
+    <span class="spacer"></span>
+    <button class="btn" (click)="drawerOpen = false">Cancel</button>
+    <button class="btn btn-primary" (click)="save()" [disabled]="busy" appRipple>{{ bulk ? 'Add ' + selected.size + ' deadlines' : 'Save' }}</button>
+  </div>
+</app-drawer>

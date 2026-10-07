@@ -1,0 +1,82 @@
+@if (error) {
+  <app-empty-state icon="receipt" title="Invoice unavailable" [text]="error" />
+} @else if (!invoice) {
+  <div class="skeleton" style="height: 420px"></div>
+} @else {
+  <div class="toolbar no-print">
+    <app-status-pill [status]="invoice.status" [overdue]="invoice.overdue" />
+    <span class="spacer"></span>
+    <button class="btn btn-sm btn-ghost" (click)="copySummary()" title="Copy a message for WhatsApp"><app-icon name="message" [size]="15" />Copy message</button>
+    <button class="btn btn-sm" (click)="print()"><app-icon name="printer" [size]="15" />Print or save PDF</button>
+  </div>
+
+  <article class="paper" #paper [class.is-paid]="invoice.status === 'PAID'" [class.is-void]="invoice.status === 'VOID'">
+    <span class="stamp">{{ invoice.status === 'VOID' ? 'Void' : 'Paid' }}</span>
+    <header>
+      <div>
+        <h2>{{ invoice.practice.name }}</h2>
+        @if (invoice.practice.address) { <p>{{ invoice.practice.address }}</p> }
+        <p>{{ invoice.practice.phone }}@if (invoice.practice.phone && invoice.practice.email) {<br>}{{ invoice.practice.email }}</p>
+      </div>
+      <div class="inv-title">
+        <span>Invoice</span>
+        <strong>{{ invoice.number }}</strong>
+      </div>
+    </header>
+
+    <section class="meta">
+      <div><span class="k">Billed to</span><strong>{{ invoice.client.name }}</strong>
+        @if (invoice.client.phone) { <span>{{ invoice.client.phone }}</span> }
+        @if (invoice.client.email) { <span>{{ invoice.client.email }}</span> }
+      </div>
+      <div><span class="k">Issued</span><strong>{{ date(invoice.issueDate) }}</strong></div>
+      <div><span class="k">Due</span><strong [class.late]="invoice.overdue">{{ date(invoice.dueDate) }}</strong></div>
+      @if (invoice.paidDate) { <div><span class="k">Paid on</span><strong>{{ date(invoice.paidDate) }}</strong></div> }
+    </section>
+
+    <table class="items">
+      <thead><tr><th>Description</th><th class="num">Qty</th><th class="num">Price</th><th class="num">Amount</th></tr></thead>
+      <tbody>
+        @for (it of invoice.items; track $index) {
+          <tr>
+            <td>{{ it.description }}</td>
+            <td class="num">{{ it.quantity }}</td>
+            <td class="num">{{ it.unitPrice | money: invoice.currency : 2 }}</td>
+            <td class="num">{{ it.quantity * it.unitPrice | money: invoice.currency : 2 }}</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+
+    <div class="sums">
+      <div><span>Subtotal</span><span>{{ invoice.subtotal | money: invoice.currency : 2 }}</span></div>
+      @if (invoice.taxRate > 0) { <div><span>Tax ({{ invoice.taxRate }}%)</span><span>{{ invoice.taxAmount | money: invoice.currency : 2 }}</span></div> }
+      <div class="grand"><span>Total</span><span>{{ invoice.total | money: invoice.currency : 2 }}</span></div>
+    </div>
+
+    @if (invoice.notes) { <p class="notes">{{ invoice.notes }}</p> }
+    <p class="thanks">Thank you.</p>
+  </article>
+
+  <div class="actions no-print">
+    @if (invoice.status === 'DRAFT') {
+      <button class="btn btn-danger btn-sm" (click)="remove()" [disabled]="busy">Delete draft</button>
+    } @else if (invoice.status !== 'VOID') {
+      <button class="btn btn-ghost btn-sm" (click)="markVoid()" [disabled]="busy">Void</button>
+    }
+    <span class="spacer"></span>
+    @if (invoice.status === 'DRAFT' || invoice.status === 'SENT') {
+      <button class="btn btn-sm" (click)="edit.emit(invoice)"><app-icon name="edit" [size]="15" />Edit</button>
+    }
+    @if (invoice.status === 'DRAFT') {
+      <button class="btn btn-sm btn-ink" (click)="setStatus('SENT', invoice.number + ' marked as sent.')" [disabled]="busy">Mark as sent</button>
+    }
+    @if (invoice.status === 'PAID') {
+      <button class="btn btn-sm" (click)="setStatus('SENT', invoice.number + ' marked as unpaid.')" [disabled]="busy">Mark as unpaid</button>
+    } @else if (invoice.status !== 'VOID') {
+      <button class="btn btn-sm btn-primary" (click)="setStatus('PAID', invoice.number + ' marked as paid.')" [disabled]="busy" appRipple>
+        <app-icon name="check" [size]="15" [stroke]="2.6" />Mark as paid
+      </button>
+    }
+  </div>
+}

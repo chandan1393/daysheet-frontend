@@ -1,0 +1,37 @@
+<section class="calc" id="calculator">
+  <div class="lp-head" appReveal>
+    <h2>What do no-shows cost you?</h2>
+    <p>Move the sliders to match a normal week. It's simple maths with your own numbers.</p>
+  </div>
+
+  <div class="box" appReveal [revealDelay]="100">
+    <div class="inputs">
+      <div class="slider">
+        <div class="top"><label for="calc-week">Appointments in a week</label><output for="calc-week">{{ perWeek }}</output></div>
+        <input id="calc-week" type="range" min="5" max="150" step="1" [(ngModel)]="perWeek" [style.--p]="fill(perWeek, 5, 150)">
+      </div>
+      <div class="slider">
+        <div class="top"><label for="calc-fee">Average fee</label><output for="calc-fee">{{ money(fee) }}</output></div>
+        <input id="calc-fee" type="range" [min]="range.min" [max]="range.max" [step]="range.step" [(ngModel)]="fee"
+               [style.--p]="fill(fee, range.min, range.max)">
+      </div>
+      <div class="slider">
+        <div class="top"><label for="calc-rate">Missed without notice</label><output for="calc-rate">{{ rate }}%</output></div>
+        <input id="calc-rate" type="range" min="1" max="25" step="1" [(ngModel)]="rate" [style.--p]="fill(rate, 1, 25)">
+        <span class="note">Not sure? Count last month's no-shows and divide by last month's appointments.</span>
+      </div>
+    </div>
+
+    <div class="result">
+      <span class="k">Lost to missed appointments</span>
+      <strong class="big" [appCountUp]="lostMonthly" [format]="fmt" [duration]="600"></strong>
+      <span class="per">a month, about {{ missedPerMonth | number: '1.0-1' }} empty slots</span>
+      <div class="year"><span class="k">Over a year</span><b [appCountUp]="lostYearly" [format]="fmt" [duration]="600"></b></div>
+      <p class="pays">
+        Win back <b>{{ breakEven }} {{ breakEven === 1 ? 'appointment' : 'appointments' }}</b> a month
+        and Daysheet has paid for itself.
+      </p>
+      <a class="btn btn-lg cta" routerLink="/register" appRipple>Start your free trial</a>
+    </div>
+  </div>
+</section>

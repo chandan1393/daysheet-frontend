@@ -1,0 +1,56 @@
+<div class="side-form">
+  <a class="brand" routerLink="/"><span class="mark" aria-hidden="true"><i></i><i></i><i></i></span>{{ appName }}</a>
+
+  <div class="form-area verify">
+    @if (done) {
+      <div class="done">
+        <svg viewBox="0 0 52 52" class="tick" aria-hidden="true"><circle cx="26" cy="26" r="24" /><path d="M15 27l7 7 15-15" /></svg>
+        <h1>Email confirmed</h1>
+        <p class="sub">Opening your practice…</p>
+      </div>
+    } @else if (mode === 'link') {
+      @if (verifying) {
+        <div class="center"><span class="spinner big"></span><p class="sub">Confirming your email…</p></div>
+      } @else {
+        <span class="env err-env"><app-icon name="alert" [size]="26" /></span>
+        <h1>That link didn't work</h1>
+        <p class="sub">{{ error }}</p>
+        <a class="btn btn-primary btn-lg submit" routerLink="/login">Log in to get a new code</a>
+      }
+    } @else if (mode === 'missing') {
+      <span class="env"><app-icon name="mail" [size]="26" /></span>
+      <h1>Check your email</h1>
+      <p class="sub">Open the email we sent you and click "Verify my email", or log in to get a new code.</p>
+      <a class="btn btn-primary btn-lg submit" routerLink="/login">Log in</a>
+    } @else {
+      <span class="env"><app-icon name="mail" [size]="26" /></span>
+      <h1>Check your email</h1>
+      <p class="sub">We sent a 6-digit code to <strong>{{ email }}</strong>. Enter it below, or tap the button in the email.</p>
+
+      <div class="code" [class.shake]="shake" (paste)="onPaste($event)">
+        @for (d of digits; track $index; let i = $index) {
+          <input #box class="digit" [class.filled]="!!digits[i]" inputmode="numeric" autocomplete="one-time-code" maxlength="6"
+                 [attr.aria-label]="'Digit ' + (i + 1)" (input)="onInput(i, $event)" (keydown)="onKey(i, $event)" [disabled]="verifying">
+          @if (i === 2) { <span class="dash" aria-hidden="true"></span> }
+        }
+      </div>
+      @if (error) { <div class="form-error" role="alert"><app-icon name="alert" [size]="18" />{{ error }}</div> }
+
+      <button class="btn btn-primary btn-lg submit" (click)="verify()" [disabled]="code.length !== 6 || verifying" appRipple>
+        @if (verifying) { <span class="spinner"></span> } Verify email
+      </button>
+
+      <p class="alt">
+        Didn't get it? Check your spam folder, or
+        @if (cooldown > 0) { <span class="muted">send a new code in {{ cooldown }}s</span> }
+        @else { <button type="button" class="link" (click)="resend()">send a new code</button> }
+      </p>
+      <p class="alt"><button type="button" class="link muted-link" (click)="startOver()">Wrong email? Start again</button></p>
+    }
+  </div>
+</div>
+
+<aside class="side-art" aria-hidden="true">
+  <h2>One quick check.</h2>
+  <p>Confirming your email keeps your records safe and makes sure password resets and invoices reach you.</p>
+</aside>

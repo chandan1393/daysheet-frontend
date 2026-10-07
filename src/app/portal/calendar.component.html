@@ -1,0 +1,65 @@
+<div class="toolbar">
+  <div class="nav-group">
+    <button class="btn btn-icon" (click)="shift(-1)" aria-label="Previous"><app-icon name="chevron-left" /></button>
+    <button class="btn" (click)="goToday()">Today</button>
+    <button class="btn btn-icon" (click)="shift(1)" aria-label="Next"><app-icon name="chevron-right" /></button>
+  </div>
+  <h2 class="range">{{ rangeLabel }}</h2>
+  @if (loading) { <span class="spinner muted"></span> }
+  <span class="spacer"></span>
+  <div class="seg" [appSegMarker]="view">
+    <span class="marker"></span>
+    <button [class.on]="view === 'week'" (click)="setView('week')">Week</button>
+    <button [class.on]="view === 'day'" (click)="setView('day')">Day</button>
+  </div>
+</div>
+
+<div class="cal panel" [class.day-view]="view === 'day'">
+  <div class="scroller" #scroller>
+    <div class="head" [style.grid-template-columns]="'60px repeat(' + columns.length + ', minmax(0, 1fr))'">
+      <div></div>
+      @for (c of columns; track c.iso) {
+        <button class="day-head" [class.today]="c.isToday" (click)="openDay(c)" [disabled]="view === 'day'">
+          <span class="dname">{{ c.date.toLocaleDateString([], { weekday: 'short' }) }}</span>
+          <span class="dnum">{{ c.date.getDate() }}</span>
+          @if (c.count) { <span class="dcount">{{ c.count }}</span> }
+        </button>
+      }
+    </div>
+
+    <div class="body" [style.grid-template-columns]="'60px repeat(' + columns.length + ', minmax(0, 1fr))'" [style.height.px]="gridHeight">
+      <div class="gutter">
+        @for (h of hours; track h) {
+          <span [style.top.px]="(h - startHour) * hourHeight">{{ hourLabel(h) }}</span>
+        }
+      </div>
+
+      @for (c of columns; track c.iso; let ci = $index) {
+        <div class="col" [class.closed]="!c.open" [class.today]="c.isToday" [style.--hh]="hourHeight + 'px'"
+             (mousemove)="onColumnMove($event, ci)" (mouseleave)="ghost = null" (click)="onColumnClick($event, c)">
+          @if (ghost && ghost.col === ci) {
+            <div class="ghost" [style.top.px]="ghost.top" [style.height.px]="hourHeight / 2 - 2">
+              <app-icon name="plus" [size]="13" [stroke]="2.6" />{{ ghost.label }}
+            </div>
+          }
+          @for (b of c.blocks; track b.appt.id) {
+            <button class="blk" [style.top.px]="b.top" [style.height.px]="b.height"
+                    [style.left]="'calc(' + b.left + '% + 3px)'" [style.width]="'calc(' + b.width + '% - 6px)'"
+                    [style.--c]="b.appt.color" [style.animation-delay.ms]="b.index * 40"
+                    [class.short]="b.height < 46" [class.cancelled]="b.appt.status === 'CANCELLED'"
+                    [class.noshow]="b.appt.status === 'NO_SHOW'" [class.done]="b.appt.status === 'COMPLETED'"
+                    (click)="open(b.appt, $event)" [attr.aria-label]="b.appt.clientName + ', ' + b.appt.serviceName">
+              <span class="t">{{ b.appt.startAt | hm }}@if (b.appt.status === 'COMPLETED') { <app-icon name="check" [size]="12" [stroke]="3" /> }</span>
+              <strong>{{ b.appt.clientName }}</strong>
+              <span class="s">{{ b.appt.serviceName }}</span>
+            </button>
+          }
+          @if (c.isToday && nowTop !== null) {
+            <div class="now" [style.top.px]="nowTop"><i></i></div>
+          }
+        </div>
+      }
+    </div>
+  </div>
+</div>
+<p class="tip muted">Click any empty time to book it. Grey columns are days you're closed.</p>

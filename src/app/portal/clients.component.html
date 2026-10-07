@@ -1,0 +1,78 @@
+<div class="page-head">
+  <div>
+    <h1>{{ 'clients' | term }}</h1>
+    <p>{{ clients.length }} {{ clients.length === 1 ? ('client' | term: true) : ('clients' | term: true) }}{{ query ? ' matching “' + query + '”' : '' }}</p>
+  </div>
+  <button class="btn btn-primary" (click)="drawerOpen = true" appRipple>
+    <app-icon name="plus" [size]="17" [stroke]="2.5" />Add {{ 'client' | term: true }}
+  </button>
+</div>
+
+<div class="toolbar">
+  <div class="input-group search">
+    <app-icon name="search" [size]="16" />
+    <input class="input" [(ngModel)]="query" (input)="onSearch()" [placeholder]="'Search by name, phone or email'" aria-label="Search">
+  </div>
+  <div class="seg" [appSegMarker]="sort">
+    <span class="marker"></span>
+    <button [class.on]="sort === 'name'" (click)="sort = 'name'">A to Z</button>
+    <button [class.on]="sort === 'recent'" (click)="sort = 'recent'">Recent</button>
+    <button [class.on]="sort === 'visits'" (click)="sort = 'visits'">Most visits</button>
+  </div>
+</div>
+
+<section class="panel">
+  @if (loading) {
+    <div class="skeletons">
+      @for (i of [1, 2, 3, 4, 5]; track i) { <div class="skeleton" style="height: 52px"></div> }
+    </div>
+  } @else if (error) {
+    <app-empty-state icon="alert" title="Couldn't load the list" [text]="error">
+      <button class="btn" (click)="load()">Try again</button>
+    </app-empty-state>
+  } @else if (!clients.length) {
+    <app-empty-state icon="users" [title]="query ? 'Nobody matches that search' : 'Add your first ' + ('client' | term: true)"
+      [text]="query ? 'Check the spelling or search by phone number.' : 'People who book online are added automatically. You can also add them yourself.'">
+      @if (!query) { <button class="btn btn-primary" (click)="drawerOpen = true">Add {{ 'client' | term: true }}</button> }
+    </app-empty-state>
+  } @else {
+    <div class="table-wrap">
+      <table class="table">
+        <thead>
+          <tr><th>Name</th><th class="hide-sm">Phone</th><th class="num">Visits</th><th class="hide-sm">Last visit</th><th>Next</th></tr>
+        </thead>
+        <tbody [@listStagger]="sorted.length">
+          @for (c of sorted; track c.id) {
+            <tr class="clickable" (click)="open(c)" tabindex="0" (keydown.enter)="open(c)">
+              <td>
+                <div class="person">
+                  <app-avatar [name]="c.fullName" [size]="36" />
+                  <div>
+                    <strong>{{ c.fullName }}</strong>
+                    <span class="sub">
+                      @for (t of tags(c); track t) { <span class="tag">{{ t }}</span> }
+                      <span class="show-sm">{{ c.phone }}</span>
+                    </span>
+                  </div>
+                </div>
+              </td>
+              <td class="hide-sm muted">{{ c.phone || '—' }}</td>
+              <td class="num">{{ c.visits }}</td>
+              <td class="hide-sm muted">{{ c.lastVisit ? (c.lastVisit | dayLabel) : '—' }}</td>
+              <td>
+                @if (c.nextVisit) { <span class="next">{{ c.nextVisit | dayLabel }}</span> }
+                @else { <span class="faint">—</span> }
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</section>
+
+<app-drawer [open]="drawerOpen" [title]="'New ' + ('client' | term: true)" subtitle="Only the name is required." (closed)="drawerOpen = false">
+  @if (drawerOpen) {
+    <app-client-form (saved)="onCreated($event)" (cancelled)="drawerOpen = false" />
+  }
+</app-drawer>
